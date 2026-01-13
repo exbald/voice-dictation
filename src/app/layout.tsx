@@ -18,36 +18,31 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Agentic Coding Boilerplate",
-    template: "%s | Agentic Coding Boilerplate",
+    default: "Voice Dictation",
+    template: "%s | Voice Dictation",
   },
   description:
-    "Complete agentic coding boilerplate with authentication, database, AI integration, and modern tooling - perfect for building AI-powered applications and autonomous agents by Leon van Zyl",
+    "Push-to-talk voice dictation. Hold Ctrl to record, release to copy clean transcript.",
   keywords: [
-    "Next.js",
-    "React",
-    "TypeScript",
-    "AI",
-    "OpenRouter",
-    "Boilerplate",
-    "Authentication",
-    "PostgreSQL",
+    "voice dictation",
+    "speech to text",
+    "transcription",
+    "Deepgram",
+    "real-time",
   ],
-  authors: [{ name: "Leon van Zyl" }],
-  creator: "Leon van Zyl",
   openGraph: {
     type: "website",
     locale: "en_US",
-    siteName: "Agentic Coding Boilerplate",
-    title: "Agentic Coding Boilerplate",
+    siteName: "Voice Dictation",
+    title: "Voice Dictation",
     description:
-      "Complete agentic coding boilerplate with authentication, database, AI integration, and modern tooling",
+      "Push-to-talk voice dictation. Hold Ctrl to record, release to copy clean transcript.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Agentic Coding Boilerplate",
+    title: "Voice Dictation",
     description:
-      "Complete agentic coding boilerplate with authentication, database, AI integration, and modern tooling",
+      "Push-to-talk voice dictation. Hold Ctrl to record, release to copy clean transcript.",
   },
   robots: {
     index: true,
@@ -59,19 +54,15 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "Agentic Coding Boilerplate",
+  name: "Voice Dictation",
   description:
-    "Complete agentic coding boilerplate with authentication, database, AI integration, and modern tooling",
-  applicationCategory: "DeveloperApplication",
+    "Push-to-talk voice dictation. Hold Ctrl to record, release to copy clean transcript.",
+  applicationCategory: "UtilityApplication",
   operatingSystem: "Any",
   offers: {
     "@type": "Offer",
     price: "0",
     priceCurrency: "USD",
-  },
-  author: {
-    "@type": "Person",
-    name: "Leon van Zyl",
   },
 };
 

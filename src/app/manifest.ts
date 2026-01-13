@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Agentic Coding Boilerplate",
-    short_name: "Agentic",
+    name: "Voice Dictation",
+    short_name: "Dictation",
     description:
-      "Complete agentic coding boilerplate with authentication, database, AI integration, and modern tooling",
+      "Push-to-talk voice dictation. Hold Ctrl to record, release to copy clean transcript.",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",

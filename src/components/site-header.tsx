@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Bot } from "lucide-react";
 import { UserProfile } from "@/components/auth/user-profile";
 import { ModeToggle } from "./ui/mode-toggle";
 
@@ -13,29 +12,19 @@ export function SiteHeader() {
       >
         Skip to main content
       </a>
-      <header className="border-b" role="banner">
+      <header className="border-b border-border/40" role="banner">
         <nav
-          className="container mx-auto px-4 py-4 flex justify-between items-center"
+          className="container mx-auto px-4 py-3 flex justify-between items-center"
           aria-label="Main navigation"
         >
-          <h1 className="text-2xl font-bold">
-            <Link
-              href="/"
-              className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
-              aria-label="Starter Kit - Go to homepage"
-            >
-              <div
-                className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary/10"
-                aria-hidden="true"
-              >
-                <Bot className="h-5 w-5" />
-              </div>
-              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                Starter Kit
-              </span>
-            </Link>
-          </h1>
-          <div className="flex items-center gap-4" role="group" aria-label="User actions">
+          <Link
+            href="/"
+            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Voice Dictation - Go to homepage"
+          >
+            Voice Dictation
+          </Link>
+          <div className="flex items-center gap-3" role="group" aria-label="User actions">
             <UserProfile />
             <ModeToggle />
           </div>

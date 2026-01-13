@@ -63,7 +63,7 @@ The project already includes several shadcn/ui components (button, dialog, avata
 
 ## What I Want to Build
 
-Basic todo list app with the ability for users to add, remove, update, complete and view todos.
+See overview.md
 
 ## Request
 
