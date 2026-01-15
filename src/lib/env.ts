@@ -23,6 +23,7 @@ const serverEnvSchema = z.object({
 
   // Voice Dictation
   DEEPGRAM_API_KEY: z.string().optional(),
+  ELEVENLABS_API_KEY: z.string().optional(),
 
   // Storage
   BLOB_READ_WRITE_TOKEN: z.string().optional(),

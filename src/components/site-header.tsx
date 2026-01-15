@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { UserProfile } from "@/components/auth/user-profile";
 import { ModeToggle } from "./ui/mode-toggle";
+import { ProviderToggle } from "./ui/provider-toggle";
 
 export function SiteHeader() {
   return (
@@ -25,6 +26,7 @@ export function SiteHeader() {
             Voice Dictation
           </Link>
           <div className="flex items-center gap-3" role="group" aria-label="User actions">
+            <ProviderToggle />
             <UserProfile />
             <ModeToggle />
           </div>
