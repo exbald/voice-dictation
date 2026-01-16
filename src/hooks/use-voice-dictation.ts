@@ -2,12 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
-import {
-  DictationStatus,
-  MicPermissionStatus,
-  isTranscriptResult,
-  extractTranscript,
-} from "@/lib/deepgram";
+import { DictationStatus, MicPermissionStatus } from "@/lib/deepgram";
+import { createProvider, STTProviderType, STTProvider } from "@/lib/stt";
 
 interface UseVoiceDictationReturn {
   // State
@@ -30,12 +26,9 @@ interface UseVoiceDictationReturn {
   clearTranscript: () => void;
 }
 
-interface DeepgramTokenResponse {
-  apiKey: string;
-  websocketUrl: string;
-}
-
-export function useVoiceDictation(): UseVoiceDictationReturn {
+export function useVoiceDictation(
+  providerType: STTProviderType = "deepgram"
+): UseVoiceDictationReturn {
   // State
   const [status, setStatus] = useState<DictationStatus>("idle");
   const [interimTranscript, setInterimTranscript] = useState("");
@@ -47,35 +40,44 @@ export function useVoiceDictation(): UseVoiceDictationReturn {
   const [isCtrlHeld, setIsCtrlHeld] = useState(false);
 
   // Refs for cleanup and to avoid stale closures
+  const providerRef = useRef<STTProvider>(createProvider(providerType));
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const websocketRef = useRef<WebSocket | null>(null);
   const isRecordingRef = useRef(false);
   const stopRecordingRef = useRef<() => void>(() => {});
 
+  // Update provider when type changes
+  useEffect(() => {
+    providerRef.current = createProvider(providerType);
+  }, [providerType]);
+
   // Check if browser supports required APIs and current permission state
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setPermissionStatus("unsupported");
-      setError("Your browser does not support microphone access");
-      return;
-    }
+    // Use async IIFE to avoid synchronous setState in effect body
+    (async () => {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setPermissionStatus("unsupported");
+        setError("Your browser does not support microphone access");
+        return;
+      }
 
-    // Check actual permission state using Permissions API
-    navigator.permissions
-      ?.query({ name: "microphone" as PermissionName })
-      .then((result) => {
-        if (result.state === "granted") {
+      // Check actual permission state using Permissions API
+      try {
+        const result = await navigator.permissions?.query({
+          name: "microphone" as PermissionName,
+        });
+        if (result?.state === "granted") {
           setPermissionStatus("granted");
         }
         // Don't auto-set "denied" - let user try clicking the button first
         // since sometimes the browser will still prompt
-      })
-      .catch(() => {
+      } catch {
         // Permissions API not supported, will check on first use
-      });
+      }
+    })();
   }, []);
 
   // Request microphone permission
@@ -125,22 +127,6 @@ export function useVoiceDictation(): UseVoiceDictationReturn {
     }
   }, [permissionStatus]);
 
-  // Fetch Deepgram token from our API
-  const fetchToken = async (): Promise<DeepgramTokenResponse | null> => {
-    try {
-      const response = await fetch("/api/deepgram/token");
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to fetch Deepgram token");
-      }
-      return response.json();
-    } catch (err) {
-      const error = err as Error;
-      setError(error.message);
-      return null;
-    }
-  };
-
   // Cleanup function - defined first since others depend on it
   const cleanup = useCallback(() => {
     // Stop MediaRecorder
@@ -172,11 +158,29 @@ export function useVoiceDictation(): UseVoiceDictationReturn {
     isRecordingRef.current = false;
     setStatus("processing");
 
-    // Cleanup recording resources
-    cleanup();
+    // Stop MediaRecorder first (stops sending audio)
+    if (mediaRecorderRef.current?.state !== "inactive") {
+      try {
+        mediaRecorderRef.current?.stop();
+      } catch {
+        // Ignore errors
+      }
+    }
+    mediaRecorderRef.current = null;
 
-    // Small delay to ensure final transcripts arrive
+    // Stop media stream tracks
+    mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+    mediaStreamRef.current = null;
+    setMediaStream(null);
+
+    // Wait for final transcripts to arrive (WebSocket still open)
     await new Promise((resolve) => setTimeout(resolve, 300));
+
+    // Now close WebSocket
+    if (websocketRef.current?.readyState === WebSocket.OPEN) {
+      websocketRef.current.close();
+    }
+    websocketRef.current = null;
 
     // Copy to clipboard
     setFinalTranscript((currentTranscript) => {
@@ -203,7 +207,7 @@ export function useVoiceDictation(): UseVoiceDictationReturn {
 
       return currentTranscript;
     });
-  }, [cleanup]);
+  }, []);
 
   // Keep ref updated for use in WebSocket callbacks
   useEffect(() => {
@@ -222,6 +226,8 @@ export function useVoiceDictation(): UseVoiceDictationReturn {
     setStatus("recording");
     isRecordingRef.current = true;
 
+    const provider = providerRef.current;
+
     try {
       // Get microphone stream
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -235,57 +241,43 @@ export function useVoiceDictation(): UseVoiceDictationReturn {
       setMediaStream(stream);
       setPermissionStatus("granted");
 
-      // Fetch Deepgram token
-      const tokenData = await fetchToken();
-      if (!tokenData) {
-        throw new Error("Could not get Deepgram credentials");
-      }
+      // Fetch credentials from provider
+      const credentials = await provider.fetchCredentials();
 
-      // Connect to Deepgram WebSocket
-      const ws = new WebSocket(tokenData.websocketUrl, [
-        "token",
-        tokenData.apiKey,
-      ]);
+      // Create WebSocket using provider
+      const ws = provider.createWebSocket(credentials);
       websocketRef.current = ws;
 
       ws.onopen = () => {
-        // Start MediaRecorder once WebSocket is open
-        const mediaRecorder = new MediaRecorder(stream, {
-          mimeType: "audio/webm;codecs=opus",
-        });
-        mediaRecorderRef.current = mediaRecorder;
-
-        mediaRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-            ws.send(event.data);
+        // Create MediaRecorder using provider
+        const mediaRecorder = provider.createMediaRecorder(
+          stream,
+          async (blob) => {
+            if (ws.readyState === WebSocket.OPEN) {
+              const data = await provider.prepareAudioData(blob);
+              provider.sendAudio(ws, data);
+            }
           }
-        };
-
+        );
+        mediaRecorderRef.current = mediaRecorder;
         mediaRecorder.start(250); // Send chunks every 250ms
       };
 
       ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-
-          if (isTranscriptResult(data)) {
-            const transcript = extractTranscript(data);
-
-            if (data.is_final) {
-              // Final result - append to accumulated transcript
-              if (transcript) {
-                setFinalTranscript((prev) =>
-                  prev ? `${prev} ${transcript}` : transcript
-                );
-              }
-              setInterimTranscript("");
-            } else {
-              // Interim result - show as preview
-              setInterimTranscript(transcript);
+        const result = provider.parseMessage(event);
+        if (result) {
+          if (result.isFinal) {
+            // Final result - append to accumulated transcript
+            if (result.text) {
+              setFinalTranscript((prev) =>
+                prev ? `${prev} ${result.text}` : result.text
+              );
             }
+            setInterimTranscript("");
+          } else {
+            // Interim result - show as preview
+            setInterimTranscript(result.text);
           }
-        } catch {
-          // Ignore non-JSON messages
         }
       };
 

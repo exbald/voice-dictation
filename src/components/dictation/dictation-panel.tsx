@@ -2,6 +2,7 @@
 
 import { AlertCircle, Mic, Copy, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useSTTProvider } from "@/contexts/stt-provider-context";
 import { useVoiceDictation } from "@/hooks/use-voice-dictation";
 import { cn } from "@/lib/utils";
 import { KeyboardHint } from "./keyboard-hint";
@@ -10,6 +11,7 @@ import { TranscriptDisplay } from "./transcript-display";
 import { WaveformVisualizer } from "./waveform-visualizer";
 
 export function DictationPanel() {
+  const { provider } = useSTTProvider();
   const {
     status,
     interimTranscript,
@@ -20,7 +22,7 @@ export function DictationPanel() {
     mediaStream,
     clearTranscript,
     isCtrlHeld,
-  } = useVoiceDictation();
+  } = useVoiceDictation(provider);
 
   // Show permission request if not granted
   if (permissionStatus === "prompt") {
