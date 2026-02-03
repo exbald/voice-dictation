@@ -1,27 +1,31 @@
+import { headers } from "next/headers";
+import { getUserApiKey } from "@/app/api/settings/api-keys/route";
+import { auth } from "@/lib/auth";
 import { DEEPGRAM_CONFIG } from "@/lib/deepgram";
 
 /**
  * GET /api/deepgram/token
  *
  * Returns Deepgram API key and WebSocket configuration for client-side connection.
- * This endpoint is public (no auth required) to reduce friction for voice dictation.
- *
- * Security note: In production, consider adding rate limiting or using
- * Deepgram's temporary token generation API for enhanced security.
+ * Requires authentication - uses user's stored API key.
  */
 export async function GET() {
-  const apiKey = process.env.DEEPGRAM_API_KEY;
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  if (!session) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const apiKey = await getUserApiKey(session.user.id, "deepgram");
 
   if (!apiKey) {
-    return new Response(
-      JSON.stringify({
-        error: "Deepgram API key not configured",
-        message: "Add DEEPGRAM_API_KEY to your environment variables",
-      }),
+    return Response.json(
       {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+        error: "No Deepgram API key configured",
+        code: "NO_API_KEY",
+        message: "Add your Deepgram API key in Settings",
+      },
+      { status: 400 }
     );
   }
 
@@ -38,16 +42,14 @@ export async function GET() {
 
   const websocketUrl = `wss://api.deepgram.com/v1/listen?${params.toString()}`;
 
-  return new Response(
-    JSON.stringify({
+  return Response.json(
+    {
       apiKey,
       websocketUrl,
       config: DEEPGRAM_CONFIG,
-    }),
+    },
     {
-      status: 200,
       headers: {
-        "Content-Type": "application/json",
         // Prevent caching of API key response
         "Cache-Control": "no-store, no-cache, must-revalidate",
       },

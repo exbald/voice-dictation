@@ -1,4 +1,14 @@
-import { pgTable, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  boolean,
+  index,
+  uuid,
+  integer,
+  numeric,
+  unique,
+} from "drizzle-orm/pg-core";
 
 // IMPORTANT! ID fields should ALWAYS use UUID types, EXCEPT the BetterAuth tables.
 
@@ -80,3 +90,59 @@ export const verification = pgTable("verification", {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
 });
+
+// ============================================================================
+// Multi-Tenant SaaS Tables
+// ============================================================================
+
+/**
+ * Stores encrypted API keys for STT providers.
+ * Each user can have one key per provider (Deepgram, ElevenLabs).
+ */
+export const userApiKey = pgTable(
+  "user_api_key",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(), // "deepgram" | "elevenlabs"
+    encryptedApiKey: text("encrypted_api_key").notNull(),
+    keyHint: text("key_hint").notNull(), // "****xyz1"
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("user_api_key_user_id_idx").on(table.userId),
+    index("user_api_key_user_provider_idx").on(table.userId, table.provider),
+    unique("user_api_key_user_provider_unique").on(table.userId, table.provider),
+  ]
+);
+
+/**
+ * Tracks individual transcription sessions for usage and cost analytics.
+ */
+export const transcriptionSession = pgTable(
+  "transcription_session",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(), // "deepgram" | "elevenlabs"
+    durationMs: integer("duration_ms").notNull(),
+    costUsd: numeric("cost_usd", { precision: 10, scale: 6 }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("transcription_session_user_id_idx").on(table.userId),
+    index("transcription_session_created_at_idx").on(table.createdAt),
+    index("transcription_session_user_provider_idx").on(
+      table.userId,
+      table.provider
+    ),
+  ]
+);
