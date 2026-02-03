@@ -21,9 +21,9 @@ export function SiteHeader() {
           <Link
             href="/"
             className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Voice Dictation - Go to homepage"
+            aria-label="Vox - Go to homepage"
           >
-            Voice Dictation
+            Vox
           </Link>
           <div className="flex items-center gap-3" role="group" aria-label="User actions">
             <ProviderToggle />

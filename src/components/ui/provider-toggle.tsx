@@ -69,7 +69,8 @@ export function ProviderToggle() {
           onValueChange={(v) => setProvider(v as STTProviderType)}
         >
           {PROVIDERS.map(({ value, label, description }) => {
-            const isAvailable = availability[value]?.available;
+            const providerInfo = availability[value];
+            const isAvailable = providerInfo?.available && providerInfo?.hasKey;
             return (
               <DropdownMenuRadioItem
                 key={value}

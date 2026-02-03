@@ -5,6 +5,13 @@ import { toast } from "sonner";
 import { DictationStatus, MicPermissionStatus } from "@/lib/deepgram";
 import { createProvider, STTProviderType, STTProvider, AudioRecorder } from "@/lib/stt";
 
+interface UseVoiceDictationOptions {
+  /** Called when authentication is required before recording */
+  onAuthRequired?: (() => void) | undefined;
+  /** Called when no API key is configured for the provider */
+  onKeyRequired?: ((provider: STTProviderType) => void) | undefined;
+}
+
 interface UseVoiceDictationReturn {
   // State
   status: DictationStatus;
@@ -27,8 +34,10 @@ interface UseVoiceDictationReturn {
 }
 
 export function useVoiceDictation(
-  providerType: STTProviderType = "deepgram"
+  providerType: STTProviderType = "deepgram",
+  options: UseVoiceDictationOptions = {}
 ): UseVoiceDictationReturn {
+  const { onAuthRequired, onKeyRequired } = options;
   // State
   const [status, setStatus] = useState<DictationStatus>("idle");
   const [interimTranscript, setInterimTranscript] = useState("");
@@ -48,10 +57,13 @@ export function useVoiceDictation(
   const stopRecordingRef = useRef<() => void>(() => {});
   const interimTranscriptRef = useRef<string>("");
   const finalTranscriptRef = useRef<string>("");
+  const recordingStartTimeRef = useRef<number>(0);
+  const providerTypeRef = useRef<STTProviderType>(providerType);
 
   // Update provider when type changes
   useEffect(() => {
     providerRef.current = createProvider(providerType);
+    providerTypeRef.current = providerType;
   }, [providerType]);
 
   // Check if browser supports required APIs and current permission state
@@ -160,6 +172,11 @@ export function useVoiceDictation(
     isRecordingRef.current = false;
     setStatus("processing");
 
+    // Calculate session duration
+    const durationMs = recordingStartTimeRef.current > 0
+      ? Date.now() - recordingStartTimeRef.current
+      : 0;
+
     // Stop recorder first (stops sending audio)
     if (recorderRef.current?.state !== "inactive") {
       try {
@@ -183,6 +200,20 @@ export function useVoiceDictation(
       websocketRef.current.close();
     }
     websocketRef.current = null;
+
+    // Record usage session (fire and forget, don't block on response)
+    if (durationMs > 0) {
+      fetch("/api/usage/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: providerTypeRef.current,
+          durationMs,
+        }),
+      }).catch(() => {
+        // Ignore errors - usage tracking is non-critical
+      });
+    }
 
     // Copy to clipboard - combine final transcript with any remaining interim transcript
     // This handles providers like ElevenLabs that may not have committed the final segment yet
@@ -233,11 +264,44 @@ export function useVoiceDictation(
       return;
     }
 
+    // Check if auth is required (callback provided means user is not authenticated)
+    if (onAuthRequired) {
+      onAuthRequired();
+      return;
+    }
+
     setError(null);
     setStatus("recording");
     isRecordingRef.current = true;
+    recordingStartTimeRef.current = Date.now();
 
     const provider = providerRef.current;
+
+    // Audio buffer for chunks captured before WebSocket is ready
+    const audioBuffer: Array<Blob | string> = [];
+    let wsReady = false;
+    let wsRef: WebSocket | null = null;
+
+    // Send function that buffers or sends depending on WebSocket state
+    const sendData = (data: Blob | string) => {
+      if (wsReady && wsRef?.readyState === WebSocket.OPEN) {
+        wsRef.send(data);
+      } else {
+        // Buffer until WebSocket is ready
+        audioBuffer.push(data);
+      }
+    };
+
+    // Flush buffered audio to WebSocket
+    const flushBuffer = () => {
+      for (const chunk of audioBuffer) {
+        if (wsRef?.readyState === WebSocket.OPEN) {
+          wsRef.send(chunk);
+        }
+      }
+      audioBuffer.length = 0; // Clear buffer
+      wsReady = true;
+    };
 
     try {
       // Get microphone stream
@@ -252,25 +316,43 @@ export function useVoiceDictation(
       setMediaStream(stream);
       setPermissionStatus("granted");
 
-      // Fetch credentials from provider
-      const credentials = await provider.fetchCredentials();
+      // Start recording IMMEDIATELY to capture audio while connecting
+      // Audio will be buffered until WebSocket is ready
+      const recorder = await provider.createRecorder(stream, sendData);
+      recorderRef.current = recorder;
+      await recorder.start(250); // timeslice for MediaRecorder
+
+      // Fetch credentials from provider (in parallel with audio capture)
+      let credentials;
+      try {
+        credentials = await provider.fetchCredentials();
+      } catch (credError) {
+        const error = credError as Error & { code?: string };
+        // Check if this is a "no API key" error
+        if (error.code === "NO_API_KEY" || error.message.includes("No API key")) {
+          if (onKeyRequired) {
+            onKeyRequired(providerTypeRef.current);
+            // Clean up
+            recorder.stop();
+            stream.getTracks().forEach((track) => track.stop());
+            isRecordingRef.current = false;
+            setStatus("idle");
+            setMediaStream(null);
+            recorderRef.current = null;
+            return;
+          }
+        }
+        throw credError;
+      }
 
       // Create WebSocket using provider
       const ws = provider.createWebSocket(credentials);
       websocketRef.current = ws;
+      wsRef = ws;
 
-      ws.onopen = async () => {
-        try {
-          // Create recorder using provider (handles audio capture and sending)
-          const recorder = await provider.createRecorder(stream, ws);
-          recorderRef.current = recorder;
-          // Start recording (async for PCMRecorder, sync for MediaRecorder)
-          await recorder.start(250); // timeslice for MediaRecorder
-        } catch (err) {
-          const error = err as Error;
-          setError(error.message);
-          stopRecordingRef.current();
-        }
+      ws.onopen = () => {
+        // WebSocket is ready - flush buffered audio and start live streaming
+        flushBuffer();
       };
 
       ws.onmessage = (event) => {
@@ -313,7 +395,7 @@ export function useVoiceDictation(
       isRecordingRef.current = false;
       cleanup();
     }
-  }, [permissionStatus, cleanup]);
+  }, [permissionStatus, cleanup, onAuthRequired, onKeyRequired]);
 
   // Clear transcript
   const clearTranscript = useCallback(() => {

@@ -9,6 +9,7 @@ import type {
   ProviderCredentials,
   TranscriptResult,
   AudioRecorder,
+  AudioSendFunction,
 } from "./types";
 
 interface DeepgramTokenResponse {
@@ -51,15 +52,23 @@ export class DeepgramProvider implements STTProvider {
     if (!response.ok) {
       let errorMessage =
         "Deepgram is not configured. Please add DEEPGRAM_API_KEY to your environment.";
+      let errorCode: string | undefined;
       try {
         const data = await response.json();
         if (data.error) {
           errorMessage = data.error;
         }
+        if (data.code) {
+          errorCode = data.code;
+        }
       } catch {
         // Ignore parse errors
       }
-      throw new Error(errorMessage);
+      const error = new Error(errorMessage) as Error & { code?: string | undefined };
+      if (errorCode) {
+        error.code = errorCode;
+      }
+      throw error;
     }
 
     const data: DeepgramTokenResponse = await response.json();
@@ -81,15 +90,15 @@ export class DeepgramProvider implements STTProvider {
 
   async createRecorder(
     stream: MediaStream,
-    ws: WebSocket
+    sendData: AudioSendFunction
   ): Promise<AudioRecorder> {
     const recorder = new MediaRecorder(stream, {
       mimeType: "audio/webm;codecs=opus",
     });
 
     recorder.ondataavailable = (e) => {
-      if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
-        ws.send(e.data);
+      if (e.data.size > 0) {
+        sendData(e.data);
       }
     };
 

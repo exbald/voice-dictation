@@ -1,22 +1,31 @@
+import { headers } from "next/headers";
+import { getUserApiKey } from "@/app/api/settings/api-keys/route";
+import { auth } from "@/lib/auth";
+
 /**
  * GET /api/elevenlabs/token
  *
  * Generates a single-use token for client-side WebSocket connection.
  * Uses Scribe v2 Realtime model with VAD-based commit strategy.
+ * Requires authentication - uses user's stored API key.
  */
 export async function GET() {
-  const apiKey = process.env.ELEVENLABS_API_KEY;
+  const session = await auth.api.getSession({ headers: await headers() });
+
+  if (!session) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const apiKey = await getUserApiKey(session.user.id, "elevenlabs");
 
   if (!apiKey) {
-    return new Response(
-      JSON.stringify({
-        error: "ElevenLabs API key not configured",
-        message: "Add ELEVENLABS_API_KEY to your environment variables",
-      }),
+    return Response.json(
       {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+        error: "No ElevenLabs API key configured",
+        code: "NO_API_KEY",
+        message: "Add your ElevenLabs API key in Settings",
+      },
+      { status: 400 }
     );
   }
 
@@ -37,16 +46,29 @@ export async function GET() {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json().catch(() => ({}));
-      console.error("ElevenLabs token generation failed:", errorData);
-      return new Response(
-        JSON.stringify({
-          error: "Failed to generate ElevenLabs token",
-          details: errorData,
-        }),
+      console.error("ElevenLabs token generation failed:", {
+        status: tokenResponse.status,
+        statusText: tokenResponse.statusText,
+        error: errorData,
+      });
+
+      // Provide specific error messages based on status
+      let errorMessage = "Failed to generate ElevenLabs token";
+      if (tokenResponse.status === 401) {
+        errorMessage = "Invalid ElevenLabs API key. Please check your key in Settings.";
+      } else if (tokenResponse.status === 403) {
+        errorMessage = "ElevenLabs API key does not have permission for real-time transcription.";
+      } else if (tokenResponse.status === 429) {
+        errorMessage = "ElevenLabs rate limit exceeded. Please try again later.";
+      }
+
+      return Response.json(
         {
+          error: errorMessage,
           status: tokenResponse.status,
-          headers: { "Content-Type": "application/json" },
-        }
+          details: errorData,
+        },
+        { status: tokenResponse.status }
       );
     }
 
@@ -54,14 +76,9 @@ export async function GET() {
     singleUseToken = tokenData.token;
   } catch (error) {
     console.error("ElevenLabs token request failed:", error);
-    return new Response(
-      JSON.stringify({
-        error: "Failed to connect to ElevenLabs",
-      }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+    return Response.json(
+      { error: "Failed to connect to ElevenLabs" },
+      { status: 500 }
     );
   }
 
@@ -76,15 +93,13 @@ export async function GET() {
 
   const websocketUrl = `wss://api.elevenlabs.io/v1/speech-to-text/realtime?${params.toString()}`;
 
-  return new Response(
-    JSON.stringify({
+  return Response.json(
+    {
       websocketUrl,
       token: singleUseToken,
-    }),
+    },
     {
-      status: 200,
       headers: {
-        "Content-Type": "application/json",
         "Cache-Control": "no-store, no-cache, must-revalidate",
       },
     }

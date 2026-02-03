@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Voice Dictation is a push-to-talk web app. Hold Ctrl to record, release to copy clean transcript automatically. Supports multiple STT providers (Deepgram Nova-3 and ElevenLabs Scribe v2) via WebSocket streaming.
+Vox is a push-to-talk transcription app. Hold Ctrl to record, release to copy clean transcript automatically. Supports multiple STT providers (Deepgram Nova-3 and ElevenLabs Scribe v2) via WebSocket streaming.
 
 ## Commands
 
@@ -42,9 +42,13 @@ User releases Ctrl → Stop recording → Auto-copy to clipboard
   - `elevenlabs-provider.ts` - ElevenLabs Scribe v2 implementation (PCM conversion)
 - `src/contexts/stt-provider-context.tsx` - React context for provider selection
 - `src/components/ui/provider-toggle.tsx` - Dropdown to switch providers
-- `src/app/api/deepgram/token/route.ts` - Deepgram credentials endpoint
-- `src/app/api/elevenlabs/token/route.ts` - ElevenLabs credentials endpoint
+- `src/app/api/deepgram/token/route.ts` - Deepgram credentials endpoint (uses user's stored key)
+- `src/app/api/elevenlabs/token/route.ts` - ElevenLabs credentials endpoint (uses user's stored key)
 - `src/app/api/stt/providers/route.ts` - Provider availability check
+- `src/app/api/settings/api-keys/route.ts` - CRUD for user API keys
+- `src/app/api/usage/route.ts` - Usage statistics and analytics
+- `src/lib/encryption.ts` - AES-256-GCM encryption for API keys
+- `src/lib/cost.ts` - Provider pricing and cost calculation
 - `src/components/dictation/dictation-panel.tsx` - Main UI orchestrating mic button, waveform, transcript display
 
 ### Dictation Components
@@ -70,26 +74,29 @@ User releases Ctrl → Stop recording → Auto-copy to clipboard
   - Deepgram Nova-3 (WebSocket streaming, WebM Opus)
   - ElevenLabs Scribe v2 Realtime (WebSocket streaming, PCM 16kHz)
 - **UI**: shadcn/ui + Tailwind CSS 4
-- **Auth**: BetterAuth (optional, dictation is public)
+- **Auth**: BetterAuth (Google OAuth + email/password)
 - **Database**: PostgreSQL + Drizzle ORM
+- **Multi-tenant**: Users store their own encrypted API keys
 
 ## Environment Variables
 
 ```env
-# Voice Dictation (at least one STT provider required)
-DEEPGRAM_API_KEY=your_deepgram_api_key      # Enables Deepgram Nova-3 provider
-ELEVENLABS_API_KEY=your_elevenlabs_api_key  # Enables ElevenLabs Scribe v2 provider
-
-# Auth features (optional)
+# Required for multi-tenant SaaS
 POSTGRES_URL=postgresql://...               # Database connection
 BETTER_AUTH_SECRET=32_char_random_string    # Auth secret (32+ chars)
+
+# Optional: Google OAuth
+GOOGLE_CLIENT_ID=...                        # For Google sign-in
+GOOGLE_CLIENT_SECRET=...
 ```
+
+**Note:** STT provider API keys (Deepgram, ElevenLabs) are user-provided through the Settings page, not server environment variables.
 
 ## Guidelines
 
 - Use `npm` (not pnpm) for running commands
-- Voice dictation is public (no auth required for core functionality)
-- Auth components exist in `src/components/auth/` but are optional
+- Voice dictation requires authentication - users provide their own API keys
+- User API keys are encrypted with AES-256-GCM using `BETTER_AUTH_SECRET`
 - Provider selection persists to localStorage, available via header dropdown
 - To add a new STT provider:
   1. Create `src/lib/stt/{provider}-provider.ts` implementing `STTProvider` interface

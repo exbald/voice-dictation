@@ -108,7 +108,7 @@ export default function OGImagePage() {
               textShadow: "0 2px 20px rgba(0,0,0,0.5)",
             }}
           >
-            Voice Dictation
+            Vox
           </h1>
 
           {/* Tagline */}

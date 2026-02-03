@@ -1,12 +1,14 @@
-# Voice Dictation
+# Vox
 
-Push-to-talk voice dictation web app. Hold Ctrl to record, release to copy clean transcript automatically.
+Push-to-talk transcription app. Hold Ctrl to record, release to copy clean transcript automatically.
 
 ## Features
 
 - **Real-time transcription** - See words appear as you speak
-- **Smart formatting** - Deepgram Nova-3 removes filler words ("uh", "um") and adds punctuation
+- **Multi-provider support** - Choose between Deepgram Nova-3 or ElevenLabs Scribe v2
+- **Smart formatting** - Auto-removes filler words ("uh", "um") and adds punctuation
 - **Auto-copy** - Transcript copies to clipboard when you release Ctrl
+- **Bring your own keys** - Users provide their own API keys (encrypted storage)
 - **Dark mode** - Supports light and dark themes
 
 ## Quick Start
@@ -15,18 +17,22 @@ Push-to-talk voice dictation web app. Hold Ctrl to record, release to copy clean
 # Install dependencies
 npm install
 
-# Add your Deepgram API key to .env
-DEEPGRAM_API_KEY=your_key_here
+# Set up environment
+cp .env.example .env
+# Add POSTGRES_URL and BETTER_AUTH_SECRET
+
+# Run database migrations
+npm run db:migrate
 
 # Start dev server
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) and hold Ctrl to start recording.
+Open [http://localhost:3000](http://localhost:3000), sign in, add your API key in Settings, then hold Ctrl to start recording.
 
 ## How It Works
 
-1. **Hold Ctrl** - Starts recording and streaming audio to Deepgram
+1. **Hold Ctrl** - Starts recording and streaming audio to your chosen STT provider
 2. **Speak** - See real-time transcript appear (interim text in gray, final in bold)
 3. **Release Ctrl** - Recording stops, clean transcript auto-copies to clipboard
 4. **Paste anywhere** - Use Cmd/Ctrl+V to paste your dictation
@@ -34,50 +40,45 @@ Open [http://localhost:3000](http://localhost:3000) and hold Ctrl to start recor
 ## Tech Stack
 
 - **Framework**: Next.js 16, React 19, TypeScript
-- **Speech-to-Text**: Deepgram Nova-3 (WebSocket streaming)
-- **UI**: shadcn/ui + Tailwind CSS
-- **Auth**: BetterAuth (optional, dictation is public)
+- **Speech-to-Text**: Deepgram Nova-3, ElevenLabs Scribe v2 (WebSocket streaming)
+- **UI**: shadcn/ui + Tailwind CSS 4
+- **Auth**: BetterAuth (Google OAuth + email/password)
+- **Database**: PostgreSQL + Drizzle ORM
 
 ## Environment Variables
 
 ```env
-# Required for voice dictation
-DEEPGRAM_API_KEY=your_deepgram_api_key
-
-# Database (for auth features)
+# Required
 POSTGRES_URL=postgresql://...
-
-# Auth
 BETTER_AUTH_SECRET=32_char_random_string
+
+# Optional: Google OAuth
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
 ```
 
-Get your Deepgram API key at [console.deepgram.com](https://console.deepgram.com)
-
-## Deployment
-
-```bash
-# Deploy to Vercel
-vercel
-
-# Add DEEPGRAM_API_KEY in Vercel dashboard
-```
+Get API keys from:
+- Deepgram: [console.deepgram.com](https://console.deepgram.com)
+- ElevenLabs: [elevenlabs.io](https://elevenlabs.io)
 
 ## Project Structure
 
 ```
 src/
 ├── app/
-│   ├── api/deepgram/token/   # Token endpoint for WebSocket auth
-│   └── page.tsx              # Voice dictation UI
-├── components/dictation/
-│   ├── dictation-panel.tsx   # Main UI container
-│   ├── transcript-display.tsx # Live transcript view
-│   ├── status-indicator.tsx  # Recording status
-│   └── keyboard-hint.tsx     # Ctrl key instructions
+│   ├── api/
+│   │   ├── deepgram/token/    # Deepgram WebSocket token
+│   │   ├── elevenlabs/token/  # ElevenLabs WebSocket token
+│   │   └── settings/api-keys/ # User API key management
+│   ├── settings/              # Settings page
+│   └── page.tsx               # Main dictation UI
+├── components/
+│   └── dictation/             # Dictation UI components
 ├── hooks/
 │   └── use-voice-dictation.ts # Core recording logic
 └── lib/
-    └── deepgram.ts           # Deepgram config & types
+    ├── stt/                   # STT provider abstraction
+    └── encryption.ts          # API key encryption
 ```
 
 ## License

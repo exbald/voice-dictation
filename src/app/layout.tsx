@@ -22,12 +22,13 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
   ),
   title: {
-    default: "Voice Dictation",
-    template: "%s | Voice Dictation",
+    default: "Vox",
+    template: "%s | Vox",
   },
   description:
-    "Push-to-talk voice dictation. Hold Ctrl to record, release to copy clean transcript.",
+    "Push-to-talk transcription. Hold Ctrl to record, release to copy clean transcript.",
   keywords: [
+    "vox",
     "voice dictation",
     "speech to text",
     "transcription",
@@ -39,31 +40,31 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "/",
-    siteName: "Voice Dictation",
-    title: "Voice Dictation - Push-to-Talk Transcription",
+    siteName: "Vox",
+    title: "Vox - Push-to-Talk Transcription",
     description:
-      "Push-to-talk voice dictation. Hold Ctrl to record, release to copy clean transcript.",
+      "Push-to-talk transcription. Hold Ctrl to record, release to copy clean transcript.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Voice Dictation - Push-to-talk transcription with Deepgram and ElevenLabs",
+        alt: "Vox - Push-to-talk transcription with Deepgram and ElevenLabs",
         type: "image/png",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Voice Dictation - Push-to-Talk Transcription",
+    title: "Vox - Push-to-Talk Transcription",
     description:
-      "Push-to-talk voice dictation. Hold Ctrl to record, release to copy clean transcript.",
+      "Push-to-talk transcription. Hold Ctrl to record, release to copy clean transcript.",
     images: [
       {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Voice Dictation - Push-to-talk transcription with Deepgram and ElevenLabs",
+        alt: "Vox - Push-to-talk transcription with Deepgram and ElevenLabs",
       },
     ],
   },
@@ -76,7 +77,7 @@ export const metadata: Metadata = {
     "msapplication-TileColor": "#0a0a0a",
   },
   appleWebApp: {
-    title: "Voice Dictation",
+    title: "Vox",
     statusBarStyle: "black-translucent",
     capable: true,
   },
@@ -86,9 +87,9 @@ export const metadata: Metadata = {
 const jsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  name: "Voice Dictation",
+  name: "Vox",
   description:
-    "Push-to-talk voice dictation. Hold Ctrl to record, release to copy clean transcript.",
+    "Push-to-talk transcription. Hold Ctrl to record, release to copy clean transcript.",
   applicationCategory: "UtilityApplication",
   operatingSystem: "Any",
   offers: {

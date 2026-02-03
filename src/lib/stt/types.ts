@@ -5,6 +5,14 @@
 
 export type STTProviderType = "deepgram" | "elevenlabs";
 
+/** List of all valid provider types for runtime validation */
+export const VALID_PROVIDERS: STTProviderType[] = ["deepgram", "elevenlabs"];
+
+/** Type guard to check if a string is a valid provider type */
+export function isValidProvider(provider: string): provider is STTProviderType {
+  return VALID_PROVIDERS.includes(provider as STTProviderType);
+}
+
 export interface TranscriptResult {
   text: string;
   isFinal: boolean;
@@ -26,13 +34,22 @@ export interface AudioRecorder {
   stop(): void;
 }
 
+/**
+ * Function to send audio data. Accepts Blob (Deepgram) or string (ElevenLabs JSON).
+ */
+export type AudioSendFunction = (data: Blob | string) => void;
+
 export interface STTProvider {
   readonly type: STTProviderType;
   fetchCredentials(): Promise<ProviderCredentials>;
   createWebSocket(credentials: ProviderCredentials): WebSocket;
+  /**
+   * Create a recorder that sends audio data via the provided send function.
+   * This allows the caller to buffer audio before the WebSocket is connected.
+   */
   createRecorder(
     stream: MediaStream,
-    ws: WebSocket
+    sendData: AudioSendFunction
   ): Promise<AudioRecorder>;
   parseMessage(event: MessageEvent): TranscriptResult | null;
 }

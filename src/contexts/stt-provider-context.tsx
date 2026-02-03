@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useState,
   useEffect,
@@ -15,6 +16,7 @@ import {
 
 interface ProviderInfo {
   available: boolean;
+  hasKey: boolean;
   name: string;
   model: string;
 }
@@ -26,13 +28,14 @@ interface STTProviderContextValue {
   setProvider: (type: STTProviderType) => void;
   availability: ProvidersAvailability | null;
   isLoading: boolean;
+  refreshAvailability: () => Promise<void>;
 }
 
 const STTProviderContext = createContext<STTProviderContextValue | null>(null);
 
 const DEFAULT_AVAILABILITY: ProvidersAvailability = {
-  deepgram: { available: true, name: "Deepgram", model: "Nova-3" },
-  elevenlabs: { available: false, name: "ElevenLabs", model: "Scribe v2 Realtime" },
+  deepgram: { available: true, hasKey: false, name: "Deepgram", model: "Nova-3" },
+  elevenlabs: { available: true, hasKey: false, name: "ElevenLabs", model: "Scribe v2 Realtime" },
 };
 
 export function STTProviderProvider({ children }: { children: ReactNode }) {
@@ -40,51 +43,68 @@ export function STTProviderProvider({ children }: { children: ReactNode }) {
   const [availability, setAvailability] = useState<ProvidersAvailability | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Fetch provider availability and saved provider
-    (async () => {
-      try {
-        const response = await fetch("/api/stt/providers");
-        if (response.ok) {
-          const data = await response.json();
-          setAvailability(data);
+  const fetchAvailability = useCallback(async (updateProvider = true) => {
+    try {
+      const response = await fetch("/api/stt/providers");
+      if (response.ok) {
+        const data = await response.json();
+        setAvailability(data);
 
-          // Get saved provider and validate it's available
+        if (updateProvider) {
+          // Get saved provider and validate it's available with a key
           const saved = getSavedProvider();
-          if (data[saved]?.available) {
+          if (data[saved]?.available && data[saved]?.hasKey) {
             setProviderState(saved);
           } else {
-            // Fall back to first available provider
-            const firstAvailable = Object.entries(data).find(
-              ([, info]) => (info as ProviderInfo).available
+            // Fall back to first available provider with a key
+            const firstWithKey = Object.entries(data).find(
+              ([, info]) => (info as ProviderInfo).available && (info as ProviderInfo).hasKey
             );
-            if (firstAvailable) {
-              setProviderState(firstAvailable[0] as STTProviderType);
+            if (firstWithKey) {
+              setProviderState(firstWithKey[0] as STTProviderType);
             }
           }
-        } else {
-          setAvailability(DEFAULT_AVAILABILITY);
+        }
+      } else if (response.status === 401) {
+        // Not authenticated - use defaults without keys
+        setAvailability(DEFAULT_AVAILABILITY);
+      } else {
+        setAvailability(DEFAULT_AVAILABILITY);
+        if (updateProvider) {
           setProviderState(getSavedProvider());
         }
-      } catch {
-        setAvailability(DEFAULT_AVAILABILITY);
-        setProviderState(getSavedProvider());
-      } finally {
-        setIsLoading(false);
       }
-    })();
+    } catch {
+      setAvailability(DEFAULT_AVAILABILITY);
+      if (updateProvider) {
+        setProviderState(getSavedProvider());
+      }
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
-  const setProvider = (type: STTProviderType) => {
-    // Only allow switching to available providers
-    if (availability?.[type]?.available) {
+  // Initial fetch
+  useEffect(() => {
+    fetchAvailability(true);
+  }, [fetchAvailability]);
+
+  const refreshAvailability = useCallback(async () => {
+    await fetchAvailability(false);
+  }, [fetchAvailability]);
+
+  const setProvider = useCallback((type: STTProviderType) => {
+    // Only allow switching to providers with configured keys
+    if (availability?.[type]?.available && availability?.[type]?.hasKey) {
       setProviderState(type);
       saveProvider(type);
     }
-  };
+  }, [availability]);
 
   return (
-    <STTProviderContext.Provider value={{ provider, setProvider, availability, isLoading }}>
+    <STTProviderContext.Provider
+      value={{ provider, setProvider, availability, isLoading, refreshAvailability }}
+    >
       {children}
     </STTProviderContext.Provider>
   );

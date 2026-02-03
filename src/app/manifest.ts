@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Voice Dictation",
-    short_name: "Dictation",
+    name: "Vox",
+    short_name: "Vox",
     description:
-      "Push-to-talk voice dictation. Hold Ctrl to record, release to copy clean transcript.",
+      "Push-to-talk transcription. Hold Ctrl to record, release to copy clean transcript.",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",
