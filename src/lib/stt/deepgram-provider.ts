@@ -82,10 +82,13 @@ export class DeepgramProvider implements STTProvider {
     if (!credentials.apiKey) {
       throw new Error("Deepgram requires an API key");
     }
-    return new WebSocket(credentials.websocketUrl, [
+    console.log("[Deepgram] Creating WebSocket with subprotocol auth, key length:", credentials.apiKey.length);
+    const ws = new WebSocket(credentials.websocketUrl, [
       "token",
       credentials.apiKey,
     ]);
+    console.log("[Deepgram] WebSocket protocols:", ws.protocol || "(pending)");
+    return ws;
   }
 
   async createRecorder(
