@@ -258,6 +258,13 @@ export function useVoiceDictation(
 
   // Start recording
   const startRecording = useCallback(async () => {
+    console.log("[STT] startRecording called", {
+      isRecording: isRecordingRef.current,
+      permissionStatus,
+      hasOnAuthRequired: !!onAuthRequired,
+      hasOnKeyRequired: !!onKeyRequired
+    });
+
     if (isRecordingRef.current) return;
     if (permissionStatus === "unsupported" || permissionStatus === "denied") {
       setError("Microphone access not available");
@@ -266,6 +273,7 @@ export function useVoiceDictation(
 
     // Check if auth is required (callback provided means user is not authenticated)
     if (onAuthRequired) {
+      console.log("[STT] Auth required, showing sign-in");
       onAuthRequired();
       return;
     }
@@ -325,7 +333,14 @@ export function useVoiceDictation(
       // Fetch credentials from provider (in parallel with audio capture)
       let credentials;
       try {
+        console.log("[STT] Fetching credentials...");
         credentials = await provider.fetchCredentials();
+        console.log("[STT] Credentials received:", {
+          hasWebsocketUrl: !!credentials.websocketUrl,
+          hasApiKey: !!credentials.apiKey,
+          hasToken: !!credentials.token,
+          urlPrefix: credentials.websocketUrl?.substring(0, 40),
+        });
       } catch (credError) {
         const error = credError as Error & { code?: string };
         // Check if this is a "no API key" error
@@ -346,11 +361,29 @@ export function useVoiceDictation(
       }
 
       // Create WebSocket using provider
-      const ws = provider.createWebSocket(credentials);
+      console.log("[STT] Creating WebSocket with URL:", credentials.websocketUrl);
+      let ws: WebSocket;
+      try {
+        ws = provider.createWebSocket(credentials);
+        console.log("[STT] WebSocket created, readyState:", ws.readyState);
+      } catch (wsError) {
+        console.error("[STT] WebSocket creation failed:", wsError);
+        throw wsError;
+      }
       websocketRef.current = ws;
       wsRef = ws;
 
+      // Debug: Check WebSocket state after 3 seconds
+      setTimeout(() => {
+        console.log("[STT] WebSocket state after 3s:", {
+          readyState: ws.readyState,
+          readyStateText: ["CONNECTING", "OPEN", "CLOSING", "CLOSED"][ws.readyState],
+          url: ws.url?.substring(0, 50) + "...",
+        });
+      }, 3000);
+
       ws.onopen = () => {
+        console.log("[STT] WebSocket connected, readyState:", ws.readyState);
         // WebSocket is ready - flush buffered audio and start live streaming
         flushBuffer();
       };
@@ -377,12 +410,15 @@ export function useVoiceDictation(
         }
       };
 
-      ws.onerror = () => {
+      ws.onerror = (e) => {
+        console.error("[STT] WebSocket error:", e);
+        console.error("[STT] WebSocket error - readyState:", ws.readyState, "url:", ws.url);
         setError("WebSocket connection error");
         stopRecordingRef.current();
       };
 
-      ws.onclose = () => {
+      ws.onclose = (e) => {
+        console.log("[STT] WebSocket closed:", e.code, e.reason, "wasClean:", e.wasClean);
         // Connection closed, ensure we're in a valid state
         if (isRecordingRef.current) {
           stopRecordingRef.current();
@@ -414,6 +450,7 @@ export function useVoiceDictation(
     const handleKeyDown = (e: KeyboardEvent) => {
       // Only trigger on Ctrl key (not Cmd on Mac for this use case)
       if (e.key === "Control") {
+        console.log("[STT] Ctrl pressed");
         setIsCtrlHeld(true);
         if (!isRecordingRef.current) {
           e.preventDefault();

@@ -33,7 +33,7 @@ export async function GET() {
       available: true,
       hasKey: configuredProviders.has("deepgram"),
       name: "Deepgram",
-      model: "Nova-3",
+      model: "Nova-2",
     },
     elevenlabs: {
       available: true,
