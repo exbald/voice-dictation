@@ -7,9 +7,10 @@ import { cn } from "@/lib/utils";
 interface MicButtonProps {
   status: DictationStatus;
   isCtrlHeld?: boolean;
+  onClick?: () => void;
 }
 
-export function MicButton({ status, isCtrlHeld = false }: MicButtonProps) {
+export function MicButton({ status, isCtrlHeld = false, onClick }: MicButtonProps) {
   const isRecording = status === "recording";
   const isProcessing = status === "processing";
   const isCopied = status === "copied";
@@ -19,7 +20,7 @@ export function MicButton({ status, isCtrlHeld = false }: MicButtonProps) {
       {/* Outer glow ring - visible when recording */}
       <div
         className={cn(
-          "absolute inset-0 rounded-full transition-all duration-500",
+          "absolute inset-0 rounded-full transition-all duration-500 pointer-events-none",
           isRecording
             ? "scale-[1.4] opacity-100 bg-red-500/20 blur-xl"
             : "scale-100 opacity-0"
@@ -29,7 +30,7 @@ export function MicButton({ status, isCtrlHeld = false }: MicButtonProps) {
       {/* Pulsing ring animation - visible when recording */}
       <div
         className={cn(
-          "absolute inset-0 rounded-full border-2 transition-all duration-300",
+          "absolute inset-0 rounded-full border-2 transition-all duration-300 pointer-events-none",
           isRecording
             ? "scale-[1.2] border-red-500/50 animate-ping"
             : "scale-100 border-transparent"
@@ -39,7 +40,7 @@ export function MicButton({ status, isCtrlHeld = false }: MicButtonProps) {
       {/* Secondary ring */}
       <div
         className={cn(
-          "absolute inset-0 rounded-full border-2 transition-all duration-500",
+          "absolute inset-0 rounded-full border-2 transition-all duration-500 pointer-events-none",
           isRecording
             ? "scale-[1.15] border-red-500/30"
             : isCtrlHeld
@@ -49,9 +50,11 @@ export function MicButton({ status, isCtrlHeld = false }: MicButtonProps) {
       />
 
       {/* Main button */}
-      <div
+      <button
+        type="button"
+        onClick={onClick}
         className={cn(
-          "relative flex items-center justify-center rounded-full transition-all duration-300 cursor-default select-none",
+          "relative flex items-center justify-center rounded-full transition-all duration-300 cursor-pointer select-none",
           // Size
           "w-32 h-32 sm:w-40 sm:h-40",
           // Base styles
@@ -92,12 +95,12 @@ export function MicButton({ status, isCtrlHeld = false }: MicButtonProps) {
             )}
           />
         )}
-      </div>
+      </button>
 
       {/* Status ring indicator */}
       <svg
         className={cn(
-          "absolute inset-0 w-full h-full -rotate-90 transition-opacity duration-300",
+          "absolute inset-0 w-full h-full -rotate-90 transition-opacity duration-300 pointer-events-none",
           isProcessing ? "opacity-100" : "opacity-0"
         )}
       >

@@ -16,15 +16,23 @@ export interface ProviderCredentials {
   token?: string; // ElevenLabs uses in query param
 }
 
+/**
+ * Generic audio recorder interface.
+ * Satisfied by both MediaRecorder and PCMRecorder.
+ */
+export interface AudioRecorder {
+  readonly state: string;
+  start(timeslice?: number): void | Promise<void>;
+  stop(): void;
+}
+
 export interface STTProvider {
   readonly type: STTProviderType;
   fetchCredentials(): Promise<ProviderCredentials>;
   createWebSocket(credentials: ProviderCredentials): WebSocket;
-  createMediaRecorder(
+  createRecorder(
     stream: MediaStream,
-    onData: (data: Blob) => void
-  ): MediaRecorder;
-  prepareAudioData(blob: Blob): Promise<string | Blob>;
-  sendAudio(ws: WebSocket, data: string | Blob): void;
+    ws: WebSocket
+  ): Promise<AudioRecorder>;
   parseMessage(event: MessageEvent): TranscriptResult | null;
 }

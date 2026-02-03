@@ -1,18 +1,22 @@
 /**
  * ElevenLabs STT Provider implementation.
  * Uses Scribe v2 Realtime model with PCM 16kHz audio format.
+ * Captures raw PCM using AudioWorklet for proper streaming.
  */
 
+import { PCMRecorder } from "./pcm-recorder";
 import type {
   STTProvider,
   STTProviderType,
   ProviderCredentials,
   TranscriptResult,
+  AudioRecorder,
 } from "./types";
 
 interface ElevenLabsMessage {
   message_type: string;
   text?: string;
+  error?: string;
 }
 
 export class ElevenLabsProvider implements STTProvider {
@@ -29,7 +33,8 @@ export class ElevenLabsProvider implements STTProvider {
     }
 
     if (!response.ok) {
-      let errorMessage = "ElevenLabs is not configured. Please add ELEVENLABS_API_KEY to your environment.";
+      let errorMessage =
+        "ElevenLabs is not configured. Please add ELEVENLABS_API_KEY to your environment.";
       try {
         const data = await response.json();
         if (data.error) {
@@ -53,37 +58,25 @@ export class ElevenLabsProvider implements STTProvider {
     return new WebSocket(credentials.websocketUrl);
   }
 
-  createMediaRecorder(
+  async createRecorder(
     stream: MediaStream,
-    onData: (data: Blob) => void
-  ): MediaRecorder {
-    const recorder = new MediaRecorder(stream, {
-      mimeType: "audio/webm;codecs=opus",
-    });
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        onData(e.data);
+    ws: WebSocket
+  ): Promise<AudioRecorder> {
+    const recorder = new PCMRecorder(stream, (samples: Int16Array) => {
+      if (ws.readyState === WebSocket.OPEN) {
+        const base64 = this.int16ToBase64(samples);
+        ws.send(
+          JSON.stringify({
+            message_type: "input_audio_chunk",
+            audio_base_64: base64,
+            commit: false,
+            sample_rate: 16000,
+          })
+        );
       }
-    };
+    });
+
     return recorder;
-  }
-
-  async prepareAudioData(blob: Blob): Promise<string> {
-    const pcmData = await this.convertToPCM(blob);
-    return this.arrayBufferToBase64(pcmData);
-  }
-
-  sendAudio(ws: WebSocket, data: string | Blob): void {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(
-        JSON.stringify({
-          message_type: "input_audio_chunk",
-          audio_base_64: data,
-          commit: false,
-          sample_rate: 16000,
-        })
-      );
-    }
   }
 
   parseMessage(event: MessageEvent): TranscriptResult | null {
@@ -98,6 +91,16 @@ export class ElevenLabsProvider implements STTProvider {
         return { text: data.text || "", isFinal: true };
       }
 
+      // Also handle committed_transcript_with_timestamps
+      if (data.message_type === "committed_transcript_with_timestamps") {
+        return { text: data.text || "", isFinal: true };
+      }
+
+      // Log errors for debugging
+      if (data.message_type === "error" || data.error) {
+        console.error("[ElevenLabs] Error:", data.message_type, data.error);
+      }
+
       return null;
     } catch {
       // Ignore non-JSON messages
@@ -105,31 +108,14 @@ export class ElevenLabsProvider implements STTProvider {
     }
   }
 
-  private async convertToPCM(blob: Blob): Promise<ArrayBuffer> {
-    const audioContext = new AudioContext({ sampleRate: 16000 });
-    try {
-      const arrayBuffer = await blob.arrayBuffer();
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      const channelData = audioBuffer.getChannelData(0);
-      const pcmData = new Int16Array(channelData.length);
-
-      for (let i = 0; i < channelData.length; i++) {
-        // Convert float32 [-1, 1] to int16 [-32768, 32767]
-        const sample = channelData[i] ?? 0;
-        pcmData[i] = Math.max(-32768, Math.min(32767, Math.round(sample * 32768)));
-      }
-
-      return pcmData.buffer;
-    } finally {
-      await audioContext.close();
-    }
-  }
-
-  private arrayBufferToBase64(buffer: ArrayBuffer): string {
-    const bytes = new Uint8Array(buffer);
+  /**
+   * Convert Int16Array to base64 string.
+   */
+  private int16ToBase64(samples: Int16Array): string {
+    const bytes = new Uint8Array(samples.buffer);
     let binary = "";
     for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i] ?? 0);
+      binary += String.fromCharCode(bytes[i]!);
     }
     return btoa(binary);
   }

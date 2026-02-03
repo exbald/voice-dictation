@@ -8,6 +8,7 @@ import type {
   STTProviderType,
   ProviderCredentials,
   TranscriptResult,
+  AudioRecorder,
 } from "./types";
 
 interface DeepgramTokenResponse {
@@ -48,7 +49,8 @@ export class DeepgramProvider implements STTProvider {
     }
 
     if (!response.ok) {
-      let errorMessage = "Deepgram is not configured. Please add DEEPGRAM_API_KEY to your environment.";
+      let errorMessage =
+        "Deepgram is not configured. Please add DEEPGRAM_API_KEY to your environment.";
       try {
         const data = await response.json();
         if (data.error) {
@@ -77,28 +79,21 @@ export class DeepgramProvider implements STTProvider {
     ]);
   }
 
-  createMediaRecorder(
+  async createRecorder(
     stream: MediaStream,
-    onData: (data: Blob) => void
-  ): MediaRecorder {
+    ws: WebSocket
+  ): Promise<AudioRecorder> {
     const recorder = new MediaRecorder(stream, {
       mimeType: "audio/webm;codecs=opus",
     });
+
     recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        onData(e.data);
+      if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+        ws.send(e.data);
       }
     };
+
     return recorder;
-  }
-
-  async prepareAudioData(blob: Blob): Promise<Blob> {
-    // Deepgram accepts WebM Opus directly, no conversion needed
-    return blob;
-  }
-
-  sendAudio(ws: WebSocket, data: string | Blob): void {
-    ws.send(data);
   }
 
   parseMessage(event: MessageEvent): TranscriptResult | null {

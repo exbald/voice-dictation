@@ -22,7 +22,17 @@ export function DictationPanel() {
     mediaStream,
     clearTranscript,
     isCtrlHeld,
+    startRecording,
+    stopRecording,
   } = useVoiceDictation(provider);
+
+  const handleMicClick = () => {
+    if (status === "idle") {
+      startRecording();
+    } else if (status === "recording") {
+      stopRecording();
+    }
+  };
 
   // Show permission request if not granted
   if (permissionStatus === "prompt") {
@@ -107,11 +117,11 @@ export function DictationPanel() {
           size={224}
         />
         {/* Main mic button */}
-        <MicButton status={status} isCtrlHeld={isCtrlHeld} />
+        <MicButton status={status} isCtrlHeld={isCtrlHeld} onClick={handleMicClick} />
       </div>
 
       {/* Keyboard hint */}
-      <KeyboardHint status={status} />
+      <KeyboardHint status={status} hasTranscript={!!hasTranscript} />
 
       {/* Error message */}
       {error && (

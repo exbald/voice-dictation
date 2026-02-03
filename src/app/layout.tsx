@@ -18,6 +18,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  ),
   title: {
     default: "Voice Dictation",
     template: "%s | Voice Dictation",
@@ -29,25 +32,53 @@ export const metadata: Metadata = {
     "speech to text",
     "transcription",
     "Deepgram",
+    "ElevenLabs",
     "real-time",
   ],
   openGraph: {
     type: "website",
     locale: "en_US",
+    url: "/",
     siteName: "Voice Dictation",
-    title: "Voice Dictation",
+    title: "Voice Dictation - Push-to-Talk Transcription",
     description:
       "Push-to-talk voice dictation. Hold Ctrl to record, release to copy clean transcript.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Voice Dictation - Push-to-talk transcription with Deepgram and ElevenLabs",
+        type: "image/png",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Voice Dictation",
+    title: "Voice Dictation - Push-to-Talk Transcription",
     description:
       "Push-to-talk voice dictation. Hold Ctrl to record, release to copy clean transcript.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Voice Dictation - Push-to-talk transcription with Deepgram and ElevenLabs",
+      },
+    ],
   },
   robots: {
     index: true,
     follow: true,
+  },
+  other: {
+    "theme-color": "#0a0a0a",
+    "msapplication-TileColor": "#0a0a0a",
+  },
+  appleWebApp: {
+    title: "Voice Dictation",
+    statusBarStyle: "black-translucent",
+    capable: true,
   },
 };
 

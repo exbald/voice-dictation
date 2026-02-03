@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { DictationStatus, MicPermissionStatus } from "@/lib/deepgram";
-import { createProvider, STTProviderType, STTProvider } from "@/lib/stt";
+import { createProvider, STTProviderType, STTProvider, AudioRecorder } from "@/lib/stt";
 
 interface UseVoiceDictationReturn {
   // State
@@ -41,11 +41,13 @@ export function useVoiceDictation(
 
   // Refs for cleanup and to avoid stale closures
   const providerRef = useRef<STTProvider>(createProvider(providerType));
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recorderRef = useRef<AudioRecorder | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const websocketRef = useRef<WebSocket | null>(null);
   const isRecordingRef = useRef(false);
   const stopRecordingRef = useRef<() => void>(() => {});
+  const interimTranscriptRef = useRef<string>("");
+  const finalTranscriptRef = useRef<string>("");
 
   // Update provider when type changes
   useEffect(() => {
@@ -129,15 +131,15 @@ export function useVoiceDictation(
 
   // Cleanup function - defined first since others depend on it
   const cleanup = useCallback(() => {
-    // Stop MediaRecorder
-    if (mediaRecorderRef.current?.state !== "inactive") {
+    // Stop recorder
+    if (recorderRef.current?.state !== "inactive") {
       try {
-        mediaRecorderRef.current?.stop();
+        recorderRef.current?.stop();
       } catch {
         // Ignore errors during cleanup
       }
     }
-    mediaRecorderRef.current = null;
+    recorderRef.current = null;
 
     // Stop media stream tracks
     mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -158,15 +160,15 @@ export function useVoiceDictation(
     isRecordingRef.current = false;
     setStatus("processing");
 
-    // Stop MediaRecorder first (stops sending audio)
-    if (mediaRecorderRef.current?.state !== "inactive") {
+    // Stop recorder first (stops sending audio)
+    if (recorderRef.current?.state !== "inactive") {
       try {
-        mediaRecorderRef.current?.stop();
+        recorderRef.current?.stop();
       } catch {
         // Ignore errors
       }
     }
-    mediaRecorderRef.current = null;
+    recorderRef.current = null;
 
     // Stop media stream tracks
     mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -182,31 +184,40 @@ export function useVoiceDictation(
     }
     websocketRef.current = null;
 
-    // Copy to clipboard
-    setFinalTranscript((currentTranscript) => {
-      const textToCopy = currentTranscript.trim();
+    // Copy to clipboard - combine final transcript with any remaining interim transcript
+    // This handles providers like ElevenLabs that may not have committed the final segment yet
+    const final = finalTranscriptRef.current.trim();
+    const interim = interimTranscriptRef.current.trim();
+    const textToCopy = final && interim
+      ? `${final} ${interim}`
+      : final || interim;
 
-      if (textToCopy) {
-        navigator.clipboard
-          .writeText(textToCopy)
-          .then(() => {
-            setStatus("copied");
-            toast.success("Copied to clipboard!");
-            // Reset to idle after showing "copied" state
-            setTimeout(() => setStatus("idle"), 2000);
-          })
-          .catch(() => {
-            setError("Could not copy to clipboard");
-            toast.error("Failed to copy to clipboard");
-            setStatus("error");
-          });
-      } else {
-        toast.info("No transcript to copy");
-        setStatus("idle");
+    if (textToCopy) {
+      // Update the displayed final transcript to include interim
+      if (interim) {
+        setFinalTranscript(textToCopy);
+        finalTranscriptRef.current = textToCopy;
       }
+      setInterimTranscript("");
+      interimTranscriptRef.current = "";
 
-      return currentTranscript;
-    });
+      navigator.clipboard
+        .writeText(textToCopy)
+        .then(() => {
+          setStatus("copied");
+          toast.success("Copied to clipboard!");
+          // Reset to idle after showing "copied" state
+          setTimeout(() => setStatus("idle"), 2000);
+        })
+        .catch(() => {
+          setError("Could not copy to clipboard");
+          toast.error("Failed to copy to clipboard");
+          setStatus("error");
+        });
+    } else {
+      toast.info("No transcript to copy");
+      setStatus("idle");
+    }
   }, []);
 
   // Keep ref updated for use in WebSocket callbacks
@@ -248,19 +259,18 @@ export function useVoiceDictation(
       const ws = provider.createWebSocket(credentials);
       websocketRef.current = ws;
 
-      ws.onopen = () => {
-        // Create MediaRecorder using provider
-        const mediaRecorder = provider.createMediaRecorder(
-          stream,
-          async (blob) => {
-            if (ws.readyState === WebSocket.OPEN) {
-              const data = await provider.prepareAudioData(blob);
-              provider.sendAudio(ws, data);
-            }
-          }
-        );
-        mediaRecorderRef.current = mediaRecorder;
-        mediaRecorder.start(250); // Send chunks every 250ms
+      ws.onopen = async () => {
+        try {
+          // Create recorder using provider (handles audio capture and sending)
+          const recorder = await provider.createRecorder(stream, ws);
+          recorderRef.current = recorder;
+          // Start recording (async for PCMRecorder, sync for MediaRecorder)
+          await recorder.start(250); // timeslice for MediaRecorder
+        } catch (err) {
+          const error = err as Error;
+          setError(error.message);
+          stopRecordingRef.current();
+        }
       };
 
       ws.onmessage = (event) => {
@@ -269,14 +279,18 @@ export function useVoiceDictation(
           if (result.isFinal) {
             // Final result - append to accumulated transcript
             if (result.text) {
-              setFinalTranscript((prev) =>
-                prev ? `${prev} ${result.text}` : result.text
-              );
+              setFinalTranscript((prev) => {
+                const newTranscript = prev ? `${prev} ${result.text}` : result.text;
+                finalTranscriptRef.current = newTranscript;
+                return newTranscript;
+              });
             }
             setInterimTranscript("");
+            interimTranscriptRef.current = "";
           } else {
             // Interim result - show as preview
             setInterimTranscript(result.text);
+            interimTranscriptRef.current = result.text;
           }
         }
       };
@@ -305,6 +319,8 @@ export function useVoiceDictation(
   const clearTranscript = useCallback(() => {
     setFinalTranscript("");
     setInterimTranscript("");
+    finalTranscriptRef.current = "";
+    interimTranscriptRef.current = "";
     setError(null);
     setStatus("idle");
   }, []);
@@ -321,6 +337,17 @@ export function useVoiceDictation(
           e.preventDefault();
           startRecording();
         }
+      }
+
+      // Press 'c' to clear transcript (only when not recording and not in an input)
+      if (
+        e.key === "c" &&
+        !isRecordingRef.current &&
+        !(e.target instanceof HTMLInputElement) &&
+        !(e.target instanceof HTMLTextAreaElement)
+      ) {
+        e.preventDefault();
+        clearTranscript();
       }
     };
 
@@ -348,7 +375,7 @@ export function useVoiceDictation(
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [startRecording]);
+  }, [startRecording, clearTranscript]);
 
   // Cleanup on unmount
   useEffect(() => {
