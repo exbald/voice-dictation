@@ -97,7 +97,7 @@ export const verification = pgTable("verification", {
 
 /**
  * Stores encrypted API keys for STT providers.
- * Each user can have one key per provider (Deepgram, ElevenLabs).
+ * Each user can have one key per provider (Deepgram, ElevenLabs, Mistral).
  */
 export const userApiKey = pgTable(
   "user_api_key",
@@ -106,7 +106,7 @@ export const userApiKey = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    provider: text("provider").notNull(), // "deepgram" | "elevenlabs"
+    provider: text("provider").notNull(), // "deepgram" | "elevenlabs" | "mistral"
     encryptedApiKey: text("encrypted_api_key").notNull(),
     keyHint: text("key_hint").notNull(), // "****xyz1"
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -132,7 +132,7 @@ export const transcriptionSession = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    provider: text("provider").notNull(), // "deepgram" | "elevenlabs"
+    provider: text("provider").notNull(), // "deepgram" | "elevenlabs" | "mistral"
     durationMs: integer("duration_ms").notNull(),
     costUsd: numeric("cost_usd", { precision: 10, scale: 6 }).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),

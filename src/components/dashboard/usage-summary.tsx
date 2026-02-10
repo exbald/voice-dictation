@@ -1,7 +1,7 @@
 "use client";
 
 import { Clock, DollarSign, Mic, Zap } from "lucide-react";
-import { DeepgramIcon, ElevenLabsIcon } from "@/components/icons/provider-icons";
+import { ProviderIcon } from "@/components/icons/provider-icons";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatCost, formatDuration, formatMinutes, PROVIDER_COSTS } from "@/lib/cost";
 
@@ -96,14 +96,12 @@ export function UsageSummary({ summary, byProvider }: UsageSummaryProps) {
                         className={`h-8 w-8 rounded-full flex items-center justify-center ${
                           provider === "deepgram"
                             ? "bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400"
-                            : "bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400"
+                            : provider === "mistral"
+                              ? "bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400"
+                              : "bg-purple-100 text-purple-600 dark:bg-purple-950 dark:text-purple-400"
                         }`}
                       >
-                        {provider === "deepgram" ? (
-                          <DeepgramIcon className="h-4 w-4" />
-                        ) : (
-                          <ElevenLabsIcon className="h-4 w-4" />
-                        )}
+                        <ProviderIcon provider={provider} className="h-4 w-4" />
                       </div>
                       <div>
                         <p className="font-medium text-sm">{providerName}</p>

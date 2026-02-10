@@ -9,7 +9,7 @@ import { isValidProvider } from "@/lib/stt/types";
  * POST /api/usage/session
  *
  * Record a completed transcription session.
- * Body: { provider: "deepgram" | "elevenlabs", durationMs: number }
+ * Body: { provider: "deepgram" | "elevenlabs" | "mistral", durationMs: number }
  *
  * Cost is calculated automatically based on provider pricing.
  */
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
 
   if (!provider || !isValidProvider(provider)) {
     return Response.json(
-      { error: "Invalid provider. Must be 'deepgram' or 'elevenlabs'" },
+      { error: "Invalid provider. Must be 'deepgram', 'elevenlabs', or 'mistral'" },
       { status: 400 }
     );
   }

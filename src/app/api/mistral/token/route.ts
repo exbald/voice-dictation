@@ -5,9 +5,8 @@ import { auth } from "@/lib/auth";
 /**
  * GET /api/mistral/token
  *
- * Returns Mistral API key and WebSocket URL for client-side connection.
- * Uses Voxtral Mini realtime transcription model.
- * Requires authentication - uses user's stored API key.
+ * Verifies the user has a Mistral API key and returns the proxy WebSocket URL.
+ * The actual API key is never exposed to the client — the proxy handles auth.
  */
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -29,22 +28,17 @@ export async function GET() {
     );
   }
 
-  // Build WebSocket URL with model and API key params
-  const params = new URLSearchParams({
-    model: "voxtral-mini-transcribe-realtime-2602",
-    api_key: apiKey,
-  });
-
-  const websocketUrl = `wss://api.mistral.ai/v1/audio/transcriptions/realtime?${params.toString()}`;
+  // Return proxy URL — the proxy authenticates upstream with Bearer token
+  const appUrl = new URL(
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  );
+  const protocol = appUrl.protocol === "https:" ? "wss" : "ws";
+  const websocketUrl = `${protocol}://${appUrl.host}/api/mistral/ws`;
 
   return Response.json(
-    {
-      apiKey,
-      websocketUrl,
-    },
+    { websocketUrl },
     {
       headers: {
-        // Prevent caching of API key response
         "Cache-Control": "no-store, no-cache, must-revalidate",
       },
     }

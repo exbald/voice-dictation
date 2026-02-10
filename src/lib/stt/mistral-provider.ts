@@ -22,6 +22,9 @@ interface MistralMessage {
 export class MistralProvider implements STTProvider {
   readonly type: STTProviderType = "mistral";
 
+  /** Accumulated delta text for the current segment. */
+  private currentSegment = "";
+
   async fetchCredentials(): Promise<ProviderCredentials> {
     let response: Response;
     try {
@@ -49,12 +52,11 @@ export class MistralProvider implements STTProvider {
     const data = await response.json();
     return {
       websocketUrl: data.websocketUrl,
-      apiKey: data.apiKey,
     };
   }
 
   createWebSocket(credentials: ProviderCredentials): WebSocket {
-    // API key is already included in the WebSocket URL
+    // Connect to local proxy — session cookies handle auth
     return new WebSocket(credentials.websocketUrl);
   }
 
@@ -82,14 +84,20 @@ export class MistralProvider implements STTProvider {
       const data: MistralMessage = JSON.parse(event.data);
 
       if (data.type === "transcription.text.delta") {
-        return { text: data.text || "", isFinal: false };
+        // Deltas are incremental — accumulate into current segment
+        this.currentSegment += data.text || "";
+        return { text: this.currentSegment, isFinal: false };
       }
 
       if (data.type === "transcription.segment") {
-        return { text: data.text || "", isFinal: true };
+        // Segment complete — return full text and reset accumulator
+        const text = data.text || this.currentSegment;
+        this.currentSegment = "";
+        return { text, isFinal: true };
       }
 
       if (data.type === "transcription.done") {
+        this.currentSegment = "";
         return null;
       }
 

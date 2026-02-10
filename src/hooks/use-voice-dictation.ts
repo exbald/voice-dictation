@@ -48,10 +48,13 @@ export function useVoiceDictation(
   const stopRecordingRef = useRef<() => void>(() => {});
   const interimTranscriptRef = useRef<string>("");
   const finalTranscriptRef = useRef<string>("");
+  const recordingStartTimeRef = useRef<number>(0);
+  const providerTypeRef = useRef<STTProviderType>(providerType);
 
   // Update provider when type changes
   useEffect(() => {
     providerRef.current = createProvider(providerType);
+    providerTypeRef.current = providerType;
   }, [providerType]);
 
   // Check if browser supports required APIs and current permission state
@@ -158,6 +161,13 @@ export function useVoiceDictation(
     if (!isRecordingRef.current) return;
 
     isRecordingRef.current = false;
+
+    // Calculate session duration for usage tracking
+    const durationMs = recordingStartTimeRef.current > 0
+      ? Date.now() - recordingStartTimeRef.current
+      : 0;
+    recordingStartTimeRef.current = 0;
+
     setStatus("processing");
 
     // Stop recorder first (stops sending audio)
@@ -218,6 +228,18 @@ export function useVoiceDictation(
       toast.info("No transcript to copy");
       setStatus("idle");
     }
+
+    // Fire-and-forget usage tracking
+    if (durationMs > 0) {
+      fetch("/api/usage/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: providerTypeRef.current,
+          durationMs,
+        }),
+      }).catch(() => {});
+    }
   }, []);
 
   // Keep ref updated for use in WebSocket callbacks
@@ -227,16 +249,6 @@ export function useVoiceDictation(
 
   // Start recording
   const startRecording = useCallback(async () => {
-    console.log("[STT] startRecording called");
-
-    // Quick test: can ANY WebSocket connect?
-    const testWs = new WebSocket("wss://echo.websocket.org");
-    testWs.onopen = () => console.log("[TEST] Echo WebSocket CONNECTED - WebSockets work!");
-    testWs.onerror = () => console.error("[TEST] Echo WebSocket FAILED - WebSockets are blocked!");
-    setTimeout(() => {
-      console.log("[TEST] Echo WebSocket state after 2s:", testWs.readyState, ["CONNECTING","OPEN","CLOSING","CLOSED"][testWs.readyState]);
-      testWs.close();
-    }, 2000);
     if (isRecordingRef.current) return;
     if (permissionStatus === "unsupported" || permissionStatus === "denied") {
       setError("Microphone access not available");
@@ -251,7 +263,6 @@ export function useVoiceDictation(
 
     try {
       // Get microphone stream
-      console.log("[STT] Getting microphone stream...");
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -259,29 +270,19 @@ export function useVoiceDictation(
           sampleRate: 16000,
         },
       });
-      console.log("[STT] Got microphone stream");
       mediaStreamRef.current = stream;
       setMediaStream(stream);
       setPermissionStatus("granted");
 
       // Fetch credentials from provider
-      console.log("[STT] Fetching credentials...");
       const credentials = await provider.fetchCredentials();
-      console.log("[STT] Got credentials, URL:", credentials.websocketUrl?.substring(0, 50));
 
       // Create WebSocket using provider
-      console.log("[STT] Creating WebSocket...");
       const ws = provider.createWebSocket(credentials);
-      console.log("[STT] WebSocket created, readyState:", ws.readyState);
       websocketRef.current = ws;
 
-      // Debug: check state after 3 seconds
-      setTimeout(() => {
-        console.log("[STT] WebSocket state after 3s:", ws.readyState, ["CONNECTING","OPEN","CLOSING","CLOSED"][ws.readyState]);
-      }, 3000);
-
       ws.onopen = async () => {
-        console.log("[STT] WebSocket OPEN");
+        recordingStartTimeRef.current = Date.now();
         try {
           // Create recorder using provider (handles audio capture and sending)
           const recorder = await provider.createRecorder(stream, ws);
@@ -317,14 +318,14 @@ export function useVoiceDictation(
         }
       };
 
-      ws.onerror = (e) => {
-        console.error("[STT] WebSocket ERROR:", e);
+      ws.onerror = () => {
+        console.error("[STT] WebSocket ERROR (see close event for details)");
         setError("WebSocket connection error");
         stopRecordingRef.current();
       };
 
       ws.onclose = (e) => {
-        console.log("[STT] WebSocket CLOSED:", e.code, e.reason);
+        console.warn("[STT] WebSocket CLOSED — code:", e.code, "reason:", e.reason, "wasClean:", e.wasClean);
         // Connection closed, ensure we're in a valid state
         if (isRecordingRef.current) {
           stopRecordingRef.current();

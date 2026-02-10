@@ -23,6 +23,14 @@ export function ElevenLabsIcon({ className }: { className?: string }) {
   );
 }
 
+export function MistralIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M4 4h4v16H4V4zm6 4h4v12h-4V8zm6-4h4v16h-4V4z" />
+    </svg>
+  );
+}
+
 export function ProviderIcon({
   provider,
   className,
@@ -38,6 +46,9 @@ export function ProviderIcon({
   }
   if (provider === "elevenlabs") {
     return <ElevenLabsIcon {...props} />;
+  }
+  if (provider === "mistral") {
+    return <MistralIcon {...props} />;
   }
   return <Key {...props} />;
 }

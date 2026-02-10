@@ -7,12 +7,17 @@
     "playwright": {
       "command": "npx",
       "args": [
-        "@playwright/mcp@latest"
+        "@playwright/mcp@latest",
+        "--browser",
+        "chrome",
+        "--headless=false",
+        "--user-data-dir",
+        "/home/exbald/.playwright-profile"
       ]
     },
     "next-devtools": {
       "command": "npx",
-      "args": ["-y", "next-devtools-mcp@latest"]
+      "args": ["-y", "next-devtools-mcp@latest", "--user-data-dir", "/home/exbald/.playwright-profile"]
     }
   }
 }
