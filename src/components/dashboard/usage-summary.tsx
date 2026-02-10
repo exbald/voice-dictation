@@ -3,7 +3,14 @@
 import { Clock, DollarSign, Mic, Zap } from "lucide-react";
 import { ProviderIcon } from "@/components/icons/provider-icons";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatCost, formatDuration, formatMinutes, PROVIDER_COSTS } from "@/lib/cost";
+import {
+  calculateCost,
+  formatCost,
+  formatDuration,
+  formatMinutes,
+  PROVIDER_COSTS,
+} from "@/lib/cost";
+import type { STTProviderType } from "@/lib/stt";
 
 interface ProviderStats {
   durationMs: number;
@@ -21,7 +28,22 @@ interface UsageSummaryProps {
 }
 
 export function UsageSummary({ summary, byProvider }: UsageSummaryProps) {
-  const totalCost = parseFloat(summary.totalCostUsd);
+  const computeCost = (
+    provider: string,
+    durationMs: number,
+    fallbackCostUsd: string
+  ) => {
+    if (provider in PROVIDER_COSTS) {
+      return calculateCost(provider as STTProviderType, durationMs);
+    }
+    const fallback = parseFloat(fallbackCostUsd);
+    return Number.isFinite(fallback) ? fallback : 0;
+  };
+
+  const computedTotalCost =
+    Object.entries(byProvider).reduce((total, [provider, stats]) => {
+      return total + computeCost(provider, stats.durationMs, stats.costUsd);
+    }, 0) || parseFloat(summary.totalCostUsd);
 
   return (
     <div className="space-y-6">
@@ -48,7 +70,7 @@ export function UsageSummary({ summary, byProvider }: UsageSummaryProps) {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCost(totalCost)}</div>
+            <div className="text-2xl font-bold">{formatCost(computedTotalCost)}</div>
             <p className="text-xs text-muted-foreground">
               Estimated API usage cost
             </p>
@@ -84,7 +106,7 @@ export function UsageSummary({ summary, byProvider }: UsageSummaryProps) {
                 const providerName =
                   PROVIDER_COSTS[provider as keyof typeof PROVIDER_COSTS]?.name ||
                   provider;
-                const cost = parseFloat(stats.costUsd);
+                const cost = computeCost(provider, stats.durationMs, stats.costUsd);
 
                 return (
                   <div

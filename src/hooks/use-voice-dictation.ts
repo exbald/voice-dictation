@@ -258,7 +258,8 @@ export function useVoiceDictation(
     setError(null);
     setStatus("recording");
     isRecordingRef.current = true;
-
+    // Re-create provider per session to reset any internal state
+    providerRef.current = createProvider(providerTypeRef.current);
     const provider = providerRef.current;
 
     try {
@@ -346,6 +347,8 @@ export function useVoiceDictation(
     setInterimTranscript("");
     finalTranscriptRef.current = "";
     interimTranscriptRef.current = "";
+    // Reset provider state so stale deltas don't leak into the next session
+    providerRef.current = createProvider(providerTypeRef.current);
     setError(null);
     setStatus("idle");
   }, []);

@@ -6,7 +6,7 @@
  * Deepgram transcription options for real-time streaming.
  */
 export const DEEPGRAM_CONFIG = {
-  model: "nova-2",
+  model: "nova-3",
   language: "en",
   smart_format: true, // Removes filler words, formats numbers/currency
   punctuate: true, // Adds punctuation
