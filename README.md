@@ -1,11 +1,11 @@
 # Vox
 
-Push-to-talk transcription app. Hold Ctrl to record, release to copy clean transcript automatically.
+Editorial dictation studio. Hold Ctrl to record, release to copy clean transcript automatically.
 
 ## Features
 
 - **Real-time transcription** - See words appear as you speak
-- **Multi-provider support** - Choose between Deepgram Nova-3 or ElevenLabs Scribe v2
+- **Multi-provider support** - Choose between Deepgram Nova-3, ElevenLabs Scribe v2, or Mistral Voxtral Realtime
 - **Smart formatting** - Auto-removes filler words ("uh", "um") and adds punctuation
 - **Auto-copy** - Transcript copies to clipboard when you release Ctrl
 - **Bring your own keys** - Users provide their own API keys (encrypted storage)
@@ -40,7 +40,7 @@ Open [http://localhost:3000](http://localhost:3000), sign in, add your API key i
 ## Tech Stack
 
 - **Framework**: Next.js 16, React 19, TypeScript
-- **Speech-to-Text**: Deepgram Nova-3, ElevenLabs Scribe v2 (WebSocket streaming)
+- **Speech-to-Text**: Deepgram Nova-3, ElevenLabs Scribe v2, Mistral Voxtral Realtime (WebSocket streaming)
 - **UI**: shadcn/ui + Tailwind CSS 4
 - **Auth**: BetterAuth (Google OAuth + email/password)
 - **Database**: PostgreSQL + Drizzle ORM
@@ -60,6 +60,7 @@ GOOGLE_CLIENT_SECRET=...
 Get API keys from:
 - Deepgram: [console.deepgram.com](https://console.deepgram.com)
 - ElevenLabs: [elevenlabs.io](https://elevenlabs.io)
+- Mistral: [console.mistral.ai](https://console.mistral.ai)
 
 ## Project Structure
 
@@ -76,6 +77,8 @@ src/
 │   └── dictation/             # Dictation UI components
 ├── hooks/
 │   └── use-voice-dictation.ts # Core recording logic
+├── public/
+│   └── icons/                 # PWA icons (standard + maskable)
 └── lib/
     ├── stt/                   # STT provider abstraction
     └── encryption.ts          # API key encryption
