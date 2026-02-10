@@ -22,6 +22,7 @@ const PROVIDERS: Array<{
 }> = [
   { value: "deepgram", label: "Deepgram", description: "Nova-3 model" },
   { value: "elevenlabs", label: "ElevenLabs", description: "Scribe v2 Realtime" },
+  { value: "mistral", label: "Mistral", description: "Voxtral Realtime" },
 ];
 
 export function ProviderToggle() {

@@ -4,6 +4,7 @@
 
 import { DeepgramProvider } from "./deepgram-provider";
 import { ElevenLabsProvider } from "./elevenlabs-provider";
+import { MistralProvider } from "./mistral-provider";
 import type { STTProviderType, STTProvider } from "./types";
 
 export * from "./types";
@@ -16,6 +17,8 @@ export function createProvider(type: STTProviderType): STTProvider {
       return new DeepgramProvider();
     case "elevenlabs":
       return new ElevenLabsProvider();
+    case "mistral":
+      return new MistralProvider();
     default:
       return new DeepgramProvider();
   }

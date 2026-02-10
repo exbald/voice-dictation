@@ -11,11 +11,12 @@ interface ApiKeyFormProps {
   existingProviders?: string[];
 }
 
-type Provider = "deepgram" | "elevenlabs";
+type Provider = "deepgram" | "elevenlabs" | "mistral";
 
 const PROVIDERS: { value: Provider; label: string }[] = [
   { value: "deepgram", label: PROVIDER_COSTS.deepgram.name },
   { value: "elevenlabs", label: PROVIDER_COSTS.elevenlabs.name },
+  { value: "mistral", label: PROVIDER_COSTS.mistral.name },
 ];
 
 export function ApiKeyForm({ onSuccess, existingProviders = [] }: ApiKeyFormProps) {

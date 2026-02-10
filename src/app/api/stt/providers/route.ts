@@ -41,6 +41,12 @@ export async function GET() {
       name: "ElevenLabs",
       model: "Scribe v2 Realtime",
     },
+    mistral: {
+      available: true,
+      hasKey: configuredProviders.has("mistral"),
+      name: "Mistral",
+      model: "Voxtral Realtime",
+    },
   };
 
   return Response.json(providers, {

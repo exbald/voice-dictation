@@ -54,7 +54,7 @@ export async function POST(request: Request) {
 
   if (!provider || !isValidProvider(provider)) {
     return Response.json(
-      { error: "Invalid provider. Must be 'deepgram' or 'elevenlabs'" },
+      { error: "Invalid provider. Must be 'deepgram', 'elevenlabs', or 'mistral'" },
       { status: 400 }
     );
   }
@@ -109,7 +109,7 @@ export async function DELETE(request: Request) {
 
   if (!provider || !isValidProvider(provider)) {
     return Response.json(
-      { error: "Invalid provider. Must be 'deepgram' or 'elevenlabs'" },
+      { error: "Invalid provider. Must be 'deepgram', 'elevenlabs', or 'mistral'" },
       { status: 400 }
     );
   }

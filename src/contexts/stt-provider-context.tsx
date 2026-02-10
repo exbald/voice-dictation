@@ -36,6 +36,7 @@ const STTProviderContext = createContext<STTProviderContextValue | null>(null);
 const DEFAULT_AVAILABILITY: ProvidersAvailability = {
   deepgram: { available: true, hasKey: false, name: "Deepgram", model: "Nova-3" },
   elevenlabs: { available: true, hasKey: false, name: "ElevenLabs", model: "Scribe v2 Realtime" },
+  mistral: { available: true, hasKey: false, name: "Mistral", model: "Voxtral Realtime" },
 };
 
 export function STTProviderProvider({ children }: { children: ReactNode }) {

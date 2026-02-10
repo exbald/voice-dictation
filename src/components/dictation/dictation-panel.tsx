@@ -1,15 +1,12 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, Mic, Copy, Trash2 } from "lucide-react";
-import { toast } from "sonner";
 import { SignInModal } from "@/components/auth/sign-in-modal";
 import { Button } from "@/components/ui/button";
 import { useSTTProvider } from "@/contexts/stt-provider-context";
 import { useVoiceDictation } from "@/hooks/use-voice-dictation";
-import { useSession } from "@/lib/auth-client";
-import { PROVIDER_COSTS } from "@/lib/cost";
 import { cn } from "@/lib/utils";
 import { KeyboardHint } from "./keyboard-hint";
 import { MicButton } from "./mic-button";
@@ -18,35 +15,9 @@ import { WaveformVisualizer } from "./waveform-visualizer";
 
 export function DictationPanel() {
   const router = useRouter();
-  const { data: session } = useSession();
-  const { provider, availability } = useSTTProvider();
+  const { provider } = useSTTProvider();
   const [showSignIn, setShowSignIn] = useState(false);
 
-  // Auth gate callbacks
-  const handleAuthRequired = useCallback(() => {
-    setShowSignIn(true);
-  }, []);
-
-  const handleKeyRequired = useCallback(
-    (providerType: string) => {
-      const providerName =
-        PROVIDER_COSTS[providerType as keyof typeof PROVIDER_COSTS]?.name ||
-        providerType;
-      toast.error(`No ${providerName} API key configured`, {
-        action: {
-          label: "Add Key",
-          onClick: () => router.push("/settings"),
-        },
-      });
-    },
-    [router]
-  );
-
-  // Determine if we need auth/key callbacks
-  const needsAuth = !session;
-  const providerInfo = availability?.[provider];
-  // Only set needsKey if we've loaded availability data - prevents race condition
-  const needsKey = session && availability !== null && providerInfo && !providerInfo.hasKey;
   const {
     status,
     interimTranscript,
@@ -59,10 +30,7 @@ export function DictationPanel() {
     isCtrlHeld,
     startRecording,
     stopRecording,
-  } = useVoiceDictation(provider, {
-    onAuthRequired: needsAuth ? handleAuthRequired : undefined,
-    onKeyRequired: needsKey ? handleKeyRequired : undefined,
-  });
+  } = useVoiceDictation(provider);
 
   const handleMicClick = () => {
     if (status === "idle") {

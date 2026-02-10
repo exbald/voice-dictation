@@ -9,7 +9,6 @@ import type {
   ProviderCredentials,
   TranscriptResult,
   AudioRecorder,
-  AudioSendFunction,
 } from "./types";
 
 interface DeepgramTokenResponse {
@@ -52,23 +51,15 @@ export class DeepgramProvider implements STTProvider {
     if (!response.ok) {
       let errorMessage =
         "Deepgram is not configured. Please add DEEPGRAM_API_KEY to your environment.";
-      let errorCode: string | undefined;
       try {
         const data = await response.json();
         if (data.error) {
           errorMessage = data.error;
         }
-        if (data.code) {
-          errorCode = data.code;
-        }
       } catch {
         // Ignore parse errors
       }
-      const error = new Error(errorMessage) as Error & { code?: string | undefined };
-      if (errorCode) {
-        error.code = errorCode;
-      }
-      throw error;
+      throw new Error(errorMessage);
     }
 
     const data: DeepgramTokenResponse = await response.json();
@@ -82,26 +73,23 @@ export class DeepgramProvider implements STTProvider {
     if (!credentials.apiKey) {
       throw new Error("Deepgram requires an API key");
     }
-    console.log("[Deepgram] Creating WebSocket with subprotocol auth, key length:", credentials.apiKey.length);
-    const ws = new WebSocket(credentials.websocketUrl, [
+    return new WebSocket(credentials.websocketUrl, [
       "token",
       credentials.apiKey,
     ]);
-    console.log("[Deepgram] WebSocket protocols:", ws.protocol || "(pending)");
-    return ws;
   }
 
   async createRecorder(
     stream: MediaStream,
-    sendData: AudioSendFunction
+    ws: WebSocket
   ): Promise<AudioRecorder> {
     const recorder = new MediaRecorder(stream, {
       mimeType: "audio/webm;codecs=opus",
     });
 
     recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        sendData(e.data);
+      if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
+        ws.send(e.data);
       }
     };
 

@@ -11,7 +11,6 @@ import type {
   ProviderCredentials,
   TranscriptResult,
   AudioRecorder,
-  AudioSendFunction,
 } from "./types";
 
 interface ElevenLabsMessage {
@@ -34,28 +33,17 @@ export class ElevenLabsProvider implements STTProvider {
     }
 
     if (!response.ok) {
-      let errorMessage = "ElevenLabs connection failed. Please check your API key in Settings.";
-      let errorCode: string | undefined;
+      let errorMessage =
+        "ElevenLabs is not configured. Please add ELEVENLABS_API_KEY to your environment.";
       try {
         const data = await response.json();
         if (data.error) {
           errorMessage = data.error;
         }
-        if (data.code) {
-          errorCode = data.code;
-        }
-        // Log details for debugging
-        if (data.details || data.status) {
-          console.error("[ElevenLabs] API error details:", data);
-        }
       } catch {
         // Ignore parse errors
       }
-      const error = new Error(errorMessage) as Error & { code?: string | undefined };
-      if (errorCode) {
-        error.code = errorCode;
-      }
-      throw error;
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
@@ -72,18 +60,20 @@ export class ElevenLabsProvider implements STTProvider {
 
   async createRecorder(
     stream: MediaStream,
-    sendData: AudioSendFunction
+    ws: WebSocket
   ): Promise<AudioRecorder> {
     const recorder = new PCMRecorder(stream, (samples: Int16Array) => {
-      const base64 = this.int16ToBase64(samples);
-      sendData(
-        JSON.stringify({
-          message_type: "input_audio_chunk",
-          audio_base_64: base64,
-          commit: false,
-          sample_rate: 16000,
-        })
-      );
+      if (ws.readyState === WebSocket.OPEN) {
+        const base64 = this.int16ToBase64(samples);
+        ws.send(
+          JSON.stringify({
+            message_type: "input_audio_chunk",
+            audio_base_64: base64,
+            commit: false,
+            sample_rate: 16000,
+          })
+        );
+      }
     });
 
     return recorder;

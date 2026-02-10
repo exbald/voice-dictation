@@ -13,6 +13,7 @@ import type { STTProviderType } from "./stt/types";
 export const PROVIDER_COSTS = {
   deepgram: { costPerMinute: 0.0043, name: "Deepgram Nova-3" },
   elevenlabs: { costPerMinute: 0.0067, name: "ElevenLabs Scribe v2" },
+  mistral: { costPerMinute: 0.006, name: "Mistral Voxtral Realtime" },
 } as const satisfies Record<
   STTProviderType,
   { costPerMinute: number; name: string }
