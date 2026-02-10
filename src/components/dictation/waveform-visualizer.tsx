@@ -41,6 +41,10 @@ export function WaveformVisualizer({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    const rootStyles = getComputedStyle(document.documentElement);
+    const recordingRgb =
+      rootStyles.getPropertyValue("--recording-rgb").trim() || "217, 112, 73";
+
     // Set up audio context and analyser
     const audioContext = new AudioContext();
     audioContextRef.current = audioContext;
@@ -98,8 +102,8 @@ export function WaveformVisualizer({
         const outerY = centerY + Math.sin(angle) * (innerRadius + barHeight);
 
         // Draw bar
-        const opacity = 0.4 + (value / 255) * 0.6;
-        ctx.strokeStyle = `rgba(239, 68, 68, ${opacity})`; // Red color
+        const opacity = 0.35 + (value / 255) * 0.65;
+        ctx.strokeStyle = `rgba(${recordingRgb}, ${opacity})`;
         ctx.lineWidth = 3;
         ctx.lineCap = "round";
         ctx.beginPath();

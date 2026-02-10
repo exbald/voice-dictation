@@ -72,9 +72,11 @@ export default function DashboardPage() {
         <div className="max-w-3xl mx-auto text-center">
           <div className="mb-8">
             <Lock className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-            <h1 className="text-2xl font-bold mb-2">Sign in Required</h1>
+            <h1 className="text-3xl font-semibold font-serif mb-2">
+              Sign in required
+            </h1>
             <p className="text-muted-foreground mb-6">
-              You need to sign in to view your usage dashboard.
+              Sign in to view usage, spend, and session trends.
             </p>
           </div>
           <UserProfile />
@@ -85,9 +87,9 @@ export default function DashboardPage() {
 
   // Authenticated state
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 py-10 max-w-4xl">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
         <div className="flex items-center gap-4">
           <Link href="/">
             <Button variant="ghost" size="icon">
@@ -97,11 +99,16 @@ export default function DashboardPage() {
           </Link>
           <div className="flex items-center gap-3">
             <LayoutDashboard className="h-6 w-6" />
-            <h1 className="text-2xl font-bold">Dashboard</h1>
+            <div>
+              <h1 className="text-3xl font-semibold font-serif">Dashboard</h1>
+              <p className="text-sm text-muted-foreground">
+                Usage overview across providers and sessions.
+              </p>
+            </div>
           </div>
         </div>
         <Link href="/settings">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="rounded-full">
             <Settings className="h-4 w-4 mr-2" />
             Settings
           </Button>
@@ -115,13 +122,17 @@ export default function DashboardPage() {
         </div>
       ) : usage ? (
         <div className="space-y-6">
-          <UsageSummary summary={usage.summary} byProvider={usage.byProvider} />
-          <UsageChart monthly={usage.monthly} />
+          <div className="rounded-2xl border border-border/60 bg-card/80 p-6 shadow-sm">
+            <UsageSummary summary={usage.summary} byProvider={usage.byProvider} />
+          </div>
+          <div className="rounded-2xl border border-border/60 bg-card/80 p-6 shadow-sm">
+            <UsageChart monthly={usage.monthly} />
+          </div>
         </div>
       ) : (
         <div className="text-center py-12 text-muted-foreground">
           <p>Unable to load usage data.</p>
-          <Button variant="outline" className="mt-4" onClick={fetchUsage}>
+          <Button variant="outline" className="mt-4 rounded-full" onClick={fetchUsage}>
             Try again
           </Button>
         </div>

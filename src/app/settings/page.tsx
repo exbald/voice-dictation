@@ -71,9 +71,11 @@ export default function SettingsPage() {
         <div className="max-w-3xl mx-auto text-center">
           <div className="mb-8">
             <Lock className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
-            <h1 className="text-2xl font-bold mb-2">Sign in Required</h1>
+            <h1 className="text-3xl font-semibold font-serif mb-2">
+              Sign in required
+            </h1>
             <p className="text-muted-foreground mb-6">
-              You need to sign in to manage your API keys and settings.
+              Sign in to manage API keys and provider settings.
             </p>
           </div>
           <UserProfile />
@@ -84,7 +86,7 @@ export default function SettingsPage() {
 
   // Authenticated state
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
+    <div className="container mx-auto px-4 py-10 max-w-2xl">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <Link href="/">
@@ -95,14 +97,19 @@ export default function SettingsPage() {
         </Link>
         <div className="flex items-center gap-3">
           <SettingsIcon className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">Settings</h1>
+          <div>
+            <h1 className="text-3xl font-semibold font-serif">Settings</h1>
+            <p className="text-sm text-muted-foreground">
+              Secure your keys and fine-tune providers.
+            </p>
+          </div>
         </div>
       </div>
 
       {/* API Keys Section */}
-      <Card>
+      <Card className="border-border/60 bg-card/80">
         <CardHeader>
-          <CardTitle>API Keys</CardTitle>
+          <CardTitle>API keys</CardTitle>
           <CardDescription>
             Configure your speech-to-text provider API keys. Your keys are
             encrypted and stored securely.

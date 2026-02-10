@@ -64,7 +64,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="container max-w-4xl mx-auto py-8 px-4">
+    <div className="container max-w-4xl mx-auto py-10 px-4">
       <div className="flex items-center gap-4 mb-8">
         <Button
           variant="ghost"
@@ -75,12 +75,17 @@ export default function ProfilePage() {
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
-        <h1 className="text-3xl font-bold">Your Profile</h1>
+        <div>
+          <h1 className="text-3xl font-semibold font-serif">Your profile</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage personal details, preferences, and security.
+          </p>
+        </div>
       </div>
 
       <div className="grid gap-6">
         {/* Profile Overview Card */}
-        <Card>
+        <Card className="border-border/60 bg-card/80">
           <CardHeader>
             <div className="flex items-center space-x-4">
               <Avatar className="h-20 w-20">
@@ -94,7 +99,7 @@ export default function ProfilePage() {
                 </AvatarFallback>
               </Avatar>
               <div className="space-y-2">
-                <h2 className="text-2xl font-semibold">{user.name}</h2>
+                <h2 className="text-2xl font-semibold font-serif">{user.name}</h2>
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Mail className="h-4 w-4" />
                   <span>{user.email}</span>
@@ -120,7 +125,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Account Information */}
-        <Card>
+        <Card className="border-border/60 bg-card/80">
           <CardHeader>
             <CardTitle>Account Information</CardTitle>
             <CardDescription>Your account details and settings</CardDescription>
@@ -131,7 +136,7 @@ export default function ProfilePage() {
                 <label className="text-sm font-medium text-muted-foreground">
                   Full Name
                 </label>
-                <div className="p-3 border rounded-md bg-muted/10">
+                <div className="p-3 border border-border/60 rounded-xl bg-muted/20">
                   {user.name || "Not provided"}
                 </div>
               </div>
@@ -139,7 +144,7 @@ export default function ProfilePage() {
                 <label className="text-sm font-medium text-muted-foreground">
                   Email Address
                 </label>
-                <div className="p-3 border rounded-md bg-muted/10 flex items-center justify-between">
+                <div className="p-3 border border-border/60 rounded-xl bg-muted/20 flex items-center justify-between">
                   <span>{user.email}</span>
                   {user.emailVerified && (
                     <Badge
@@ -156,9 +161,9 @@ export default function ProfilePage() {
             <Separator />
 
             <div className="space-y-4">
-              <h3 className="text-lg font-medium">Account Status</h3>
+              <h3 className="text-lg font-medium">Account status</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center justify-between p-4 border border-border/60 rounded-2xl bg-background/60">
                   <div className="space-y-1">
                     <p className="font-medium">Email Verification</p>
                     <p className="text-sm text-muted-foreground">
@@ -169,7 +174,7 @@ export default function ProfilePage() {
                     {user.emailVerified ? "Verified" : "Unverified"}
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center justify-between p-4 border border-border/60 rounded-2xl bg-background/60">
                   <div className="space-y-1">
                     <p className="font-medium">Account Type</p>
                     <p className="text-sm text-muted-foreground">
@@ -184,7 +189,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Account Activity */}
-        <Card>
+        <Card className="border-border/60 bg-card/80">
           <CardHeader>
             <CardTitle>Recent Activity</CardTitle>
             <CardDescription>
@@ -193,7 +198,7 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex items-center justify-between p-4 border border-border/60 rounded-2xl bg-background/60">
                 <div className="flex items-center space-x-3">
                   <div className="h-2 w-2 bg-green-500 rounded-full"></div>
                   <div>

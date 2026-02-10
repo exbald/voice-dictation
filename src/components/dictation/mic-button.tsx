@@ -22,7 +22,7 @@ export function MicButton({ status, isCtrlHeld = false, onClick }: MicButtonProp
         className={cn(
           "absolute inset-0 rounded-full transition-all duration-500 pointer-events-none",
           isRecording
-            ? "scale-[1.4] opacity-100 bg-red-500/20 blur-xl"
+            ? "scale-[1.4] opacity-100 bg-[rgba(217,112,73,0.2)] blur-xl"
             : "scale-100 opacity-0"
         )}
       />
@@ -32,7 +32,7 @@ export function MicButton({ status, isCtrlHeld = false, onClick }: MicButtonProp
         className={cn(
           "absolute inset-0 rounded-full border-2 transition-all duration-300 pointer-events-none",
           isRecording
-            ? "scale-[1.2] border-red-500/50 animate-ping"
+            ? "scale-[1.2] border-[rgba(217,112,73,0.5)] animate-ping"
             : "scale-100 border-transparent"
         )}
       />
@@ -42,9 +42,9 @@ export function MicButton({ status, isCtrlHeld = false, onClick }: MicButtonProp
         className={cn(
           "absolute inset-0 rounded-full border-2 transition-all duration-500 pointer-events-none",
           isRecording
-            ? "scale-[1.15] border-red-500/30"
+            ? "scale-[1.15] border-[rgba(217,112,73,0.3)]"
             : isCtrlHeld
-              ? "scale-[1.1] border-primary/30"
+              ? "scale-[1.1] border-primary/40"
               : "scale-100 border-transparent"
         )}
       />
@@ -59,14 +59,14 @@ export function MicButton({ status, isCtrlHeld = false, onClick }: MicButtonProp
           "w-32 h-32 sm:w-40 sm:h-40",
           // Base styles
           isRecording
-            ? "bg-red-500 shadow-[0_0_60px_rgba(239,68,68,0.5)] scale-110"
+            ? "bg-[rgba(217,112,73,0.95)] shadow-[0_0_60px_rgba(217,112,73,0.45)] scale-110"
             : isCopied
-              ? "bg-green-500 shadow-[0_0_40px_rgba(34,197,94,0.3)]"
+              ? "bg-[rgba(60,160,110,0.95)] shadow-[0_0_40px_rgba(60,160,110,0.3)]"
               : isProcessing
-                ? "bg-blue-500 shadow-[0_0_40px_rgba(59,130,246,0.3)] animate-pulse"
+                ? "bg-[rgba(73,135,217,0.95)] shadow-[0_0_40px_rgba(73,135,217,0.3)] animate-pulse"
                 : isCtrlHeld
-                  ? "bg-primary/90 shadow-[0_0_40px_rgba(var(--primary),0.3)] scale-105"
-                  : "bg-primary/10 hover:bg-primary/15"
+                  ? "bg-primary/90 shadow-[0_0_40px_rgba(217,112,73,0.2)] scale-105"
+                  : "bg-primary/15 hover:bg-primary/20"
         )}
       >
         {/* Icon */}
@@ -112,7 +112,7 @@ export function MicButton({ status, isCtrlHeld = false, onClick }: MicButtonProp
           stroke="currentColor"
           strokeWidth="2"
           strokeDasharray="30 10"
-          className="text-blue-500 animate-spin"
+          className="text-[rgba(73,135,217,0.9)] animate-spin"
           style={{ animationDuration: "3s" }}
         />
       </svg>

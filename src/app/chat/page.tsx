@@ -11,22 +11,22 @@ import { useSession } from "@/lib/auth-client";
 import type { Components } from "react-markdown";
 
 const H1: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = (props) => (
-  <h1 className="mt-2 mb-3 text-2xl font-bold" {...props} />
+  <h1 className="mt-2 mb-3 text-2xl font-semibold font-serif" {...props} />
 );
 const H2: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = (props) => (
-  <h2 className="mt-2 mb-2 text-xl font-semibold" {...props} />
+  <h2 className="mt-2 mb-2 text-xl font-semibold font-serif" {...props} />
 );
 const H3: React.FC<React.HTMLAttributes<HTMLHeadingElement>> = (props) => (
   <h3 className="mt-2 mb-2 text-lg font-semibold" {...props} />
 );
 const Paragraph: React.FC<React.HTMLAttributes<HTMLParagraphElement>> = (
   props
-) => <p className="mb-3 leading-7 text-sm" {...props} />;
+) => <p className="mb-3 leading-7 text-sm text-foreground/80" {...props} />;
 const UL: React.FC<React.HTMLAttributes<HTMLUListElement>> = (props) => (
-  <ul className="mb-3 ml-5 list-disc space-y-1 text-sm" {...props} />
+  <ul className="mb-3 ml-5 list-disc space-y-1 text-sm text-foreground/80" {...props} />
 );
 const OL: React.FC<React.OlHTMLAttributes<HTMLOListElement>> = (props) => (
-  <ol className="mb-3 ml-5 list-decimal space-y-1 text-sm" {...props} />
+  <ol className="mb-3 ml-5 list-decimal space-y-1 text-sm text-foreground/80" {...props} />
 );
 const LI: React.FC<React.LiHTMLAttributes<HTMLLIElement>> = (props) => (
   <li className="leading-6" {...props} />
@@ -35,7 +35,7 @@ const Anchor: React.FC<React.AnchorHTMLAttributes<HTMLAnchorElement>> = (
   props
 ) => (
   <a
-    className="underline underline-offset-2 text-primary hover:opacity-90"
+    className="underline underline-offset-4 text-primary hover:opacity-90"
     target="_blank"
     rel="noreferrer noopener"
     {...props}
@@ -45,7 +45,7 @@ const Blockquote: React.FC<React.BlockquoteHTMLAttributes<HTMLElement>> = (
   props
 ) => (
   <blockquote
-    className="mb-3 border-l-2 border-border pl-3 text-muted-foreground"
+    className="mb-3 border-l-2 border-border/70 pl-3 text-muted-foreground"
     {...props}
   />
 );
@@ -55,21 +55,21 @@ const Code: Components["code"] = ({ children, className, ...props }) => {
 
   if (isInline) {
     return (
-      <code className="rounded bg-muted px-1 py-0.5 text-xs" {...props}>
+      <code className="rounded bg-muted/70 px-1 py-0.5 text-xs font-mono" {...props}>
         {children}
       </code>
     );
   }
   return (
-    <pre className="mb-3 w-full overflow-x-auto rounded-md bg-muted p-3">
-      <code className="text-xs leading-5" {...props}>
+    <pre className="mb-3 w-full overflow-x-auto rounded-xl bg-muted/70 p-3">
+      <code className="text-xs leading-5 font-mono" {...props}>
         {children}
       </code>
     </pre>
   );
 };
 const HR: React.FC<React.HTMLAttributes<HTMLHRElement>> = (props) => (
-  <hr className="my-4 border-border" {...props} />
+  <hr className="my-4 border-border/60" {...props} />
 );
 const Table: React.FC<React.TableHTMLAttributes<HTMLTableElement>> = (
   props
@@ -80,12 +80,12 @@ const Table: React.FC<React.TableHTMLAttributes<HTMLTableElement>> = (
 );
 const TH: React.FC<React.ThHTMLAttributes<HTMLTableCellElement>> = (props) => (
   <th
-    className="border border-border bg-muted px-2 py-1 text-left"
+    className="border border-border bg-muted/70 px-2 py-1 text-left"
     {...props}
   />
 );
 const TD: React.FC<React.TdHTMLAttributes<HTMLTableCellElement>> = (props) => (
-  <td className="border border-border px-2 py-1" {...props} />
+  <td className="border border-border px-2 py-1 text-foreground/80" {...props} />
 );
 
 const markdownComponents: Components = {
@@ -165,7 +165,7 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="p-1 hover:bg-muted rounded transition-colors"
+      className="p-1 hover:bg-muted/70 rounded-full transition-colors"
       title="Copy to clipboard"
     >
       {copied ? (
@@ -179,7 +179,7 @@ function CopyButton({ text }: { text: string }) {
 
 function ThinkingIndicator() {
   return (
-    <div className="flex items-center gap-2 p-3 rounded-lg bg-muted max-w-[80%]">
+    <div className="flex items-center gap-2 p-3 rounded-2xl bg-muted/70 max-w-[80%]">
       <Loader2 className="h-4 w-4 animate-spin" />
       <span className="text-sm text-muted-foreground">AI is thinking...</span>
     </div>
@@ -244,11 +244,16 @@ export default function ChatPage() {
   const isStreaming = status === "streaming";
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-10">
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6 pb-4 border-b">
-          <h1 className="text-2xl font-bold">AI Chat</h1>
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6 pb-4 border-b border-border/60">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-semibold font-serif">AI Chat</h1>
+            <p className="text-sm text-muted-foreground">
+              Brainstorm, rewrite, and refine without leaving Vox.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground">
               Welcome, {session.user.name}!
             </span>
@@ -261,7 +266,7 @@ export default function ChatPage() {
         </div>
 
         {error && (
-          <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+          <div className="mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-2xl">
             <p className="text-sm text-destructive">
               Error: {error.message || "Something went wrong"}
             </p>
@@ -271,7 +276,7 @@ export default function ChatPage() {
         <div className="min-h-[50vh] overflow-y-auto space-y-4 mb-4">
           {messages.length === 0 && (
             <div className="text-center text-muted-foreground py-12">
-              Start a conversation with AI
+              Start with a question, a draft, or a rough idea.
             </div>
           )}
           {messages.map((message) => {
@@ -284,10 +289,10 @@ export default function ChatPage() {
             return (
               <div
                 key={message.id}
-                className={`group p-3 rounded-lg ${
+                className={`group p-4 rounded-2xl shadow-sm ${
                   message.role === "user"
                     ? "bg-primary text-primary-foreground ml-auto max-w-[80%]"
-                    : "bg-muted max-w-[80%]"
+                    : "bg-card/80 border border-border/60 max-w-[80%]"
                 }`}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -328,7 +333,7 @@ export default function ChatPage() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message..."
-            className="flex-1 p-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex-1 p-3 border border-border/70 rounded-xl focus:outline-none focus:ring-2 focus:ring-ring bg-background/80"
             disabled={isStreaming}
           />
           <Button type="submit" disabled={!input.trim() || isStreaming}>

@@ -13,19 +13,29 @@ export function SiteHeader() {
       >
         Skip to main content
       </a>
-      <header className="border-b border-border/40" role="banner">
+      <header
+        className="sticky top-0 z-50 border-b border-border/50 bg-background/90 backdrop-blur-md"
+        role="banner"
+      >
         <nav
-          className="container mx-auto px-4 py-3 flex justify-between items-center"
+          className="container mx-auto px-4 py-4 flex justify-between items-center"
           aria-label="Main navigation"
         >
           <Link
             href="/"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className="flex items-center gap-3 text-lg font-semibold text-foreground hover:text-foreground/80 transition-colors font-serif tracking-tight"
             aria-label="Vox - Go to homepage"
           >
             Vox
+            <span className="hidden text-[11px] uppercase tracking-[0.3em] text-muted-foreground/70 sm:inline">
+              Studio
+            </span>
           </Link>
-          <div className="flex items-center gap-3" role="group" aria-label="User actions">
+          <div
+            className="flex items-center gap-3"
+            role="group"
+            aria-label="User actions"
+          >
             <ProviderToggle />
             <UserProfile />
             <ModeToggle />
